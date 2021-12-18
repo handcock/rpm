@@ -10,7 +10,7 @@ To install it, you can also use:
 # If devtools is not installed:
 # install.packages("devtools")
 
-devtools::install_github("eelawson/rpm")
+devtools::install_github("eelawson/rpm", auth_token="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")
 ```
 ## Resources
 
