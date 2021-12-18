@@ -1,0 +1,52 @@
+#' Faux Data on Heterosexual Matching
+#' 
+#' This data set represents a simulation of a bipartite matching.
+#' The data set is named fauxmatching.
+#' Its primary use is to illustrate the fitting of a Revealed Preference Matchings Model (rpm).
+#' The model assumes a one-to-one stable matching using an observed set of
+#' matchings and a set of (possibly dyadic) covariates to 
+#' estimate the parameters for
+#' linear equations of utilities. This provides such data
+#' for a matching between men and women of certain
+#' characteristics (or shared characteristics) of people of the opposite sex.
+#' 
+#' @usage
+#' data(fauxmatching)
+#' @docType data
+#' @name fauxmatching
+#' @format \code{fauxmatching} is a list containing a pair of \code{data.frame} objects: \code{Xdata} and \code{Zdata}.
+#' 
+#' \code{Xdata} is for women. Each row is a woman, each column is a variable on that women
+#' or her partnerships. The women's ID variable s called \code{pid} and
+#' the variable with the ID of the women's partner is called \code{pair_id}. If the women is single the men's ID is NA.
+#' \code{Zdata} is for men. Each row is a man, each column is a variable on that men
+#' The men's ID variable is called \code{pid}.
+#' \itemize{
+#' \item{pair_id}{ The ID of the person's partner. This is in both \code{Xdata} and \code{Zdata}.}
+#' \item{sampled}{ The indicator that the person was sampled directly (as distinct from being included as the match of a directly sampled
+#' person. All single people are directly sampled.  This is in both \code{Xdata} and \code{Zdata}.}
+#' }
+#' @details The pairings are determined by the \code{pair_id} variable in \code{Xdata}. 
+#' If that variable is NA then the women is
+#' assumed to be single. If men are listed in \code{Zdata} and are not partnered then they are assumed single.
+#' Weights are specified by three optional variables in \code{Xdata}.
+#' \itemize{
+#' \item{X_w}{ The weight variable for women. The sum of the weights of the sampled women is the
+#' number of women in the population.}
+#' \item{Z_w}{ The weight variable for men. The sum of the weights of the sampled men is the
+#' number of men in the population.}
+#' \item{pair_w}{ The weight variable for pairs.}
+#' }
+#' @examples
+#' library(rpm)
+#' data(fauxmatching)
+#' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
+#'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
+#'           X_w="X_w", Z_w="Z_w",
+#'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
+#'           sampled="sampled")
+#' summary(fit)
+#' @source The data set is simulation based upon an rpm model fit to data from
+#' the 2008 SIPP.
+#' @keywords datasets
+NULL
