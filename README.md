@@ -26,7 +26,7 @@ fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 summary(fit)
 ```
 
-For detail on how to construct data for input to `rpm()` see the documentation:
+For details on how to construct data for input to `rpm()` see the documentation:
 ```
 help(fauxmatching)
 ```
