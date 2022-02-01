@@ -19,12 +19,19 @@
 #' When publishing results obtained using this package the original authors are
 #' to be cited as:
 #' 
-#' Handcock, Mark S. (2020) \pkg{rpm}: Modeling of Revealed Preferences Matchings
-#' R package, Los Angeles, CA.  Version 0.51, \url{http://statnet.org}.
+#' Mark S. Handcock, Ryan Admiraal, Fiona C. Yeung and Shuchi Goyal (2020) \pkg{rpm}: Modeling of Revealed Preferences Matchings
+#' R package, Los Angeles, CA.  Version 0.60, \url{http://statnet.org}.
 #' 
 #' All programs derived from this package must cite it. For complete citation
 #' information, use\cr \code{citation(package="rpm")}.
 #' 
+#' For details on how to construct data for input to \code{rpm()} see the documentation:
+#' 
+#' \code{help(fauxmatching)}
+#'
+#' For information on the current terms that can be used in formulas for \code{rpm()} see the documentation:
+#' 
+#' \code{help("rpm-terms")}
 #' @name rpm-package
 #' @docType package
 #' @author Mark S. Handcock <handcock@stat.ucla.edu>
@@ -51,6 +58,10 @@
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled",sampling_design="stock-flow")
 #' summary(fit)
+#' # For details on how to construct data for input:
+#' help(fauxmatching)
+#' # For information on the current terms that can be used in formulas:
+#' help("rpm-terms")
 #' 
 #' @references Menzel, Konrad (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
