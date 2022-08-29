@@ -480,7 +480,6 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
       print(a)
     }
 
-    if(!control$bootstrap){
      out.hessian <- vector(length(init_theta),mode="list")
      for(i in seq_along(init_theta)){
       if(!is.empty(init_theta[[i]])){
@@ -492,6 +491,7 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
       }
      }
 
+    if(!control$bootstrap){
      for(i in seq_along(init_theta)){
       if(!is.empty(init_theta[[i]])){
        dd <- diag(out.hessian[[i]]$covar)
@@ -504,7 +504,7 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
      }
      colnames(d) <- paste0(1:length(init_theta))
      if(verbose){ print(d) }
- 
+
      covar.val <- function(out.hessian){
       ifelse(all(!is.na(diag(out.hessian)))&all(diag(out.hessian)>0),0.01*sum(log(diag(out.hessian))),1000000000)
      }
@@ -533,6 +533,10 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
        lliks[i] <- llik.nohessian(out.list[[i]])
      }
      out <- out.list[[which.min(lliks)]]
+     out$covar <- out.hessian[[which.min(lliks)]]$covar
+     out$ext.covar <- out.hessian[[which.min(lliks)]]$ext.covar
+     out$covar.unconstrained <- out.hessian[[which.min(lliks)]]$covar.unconstrained
+     out$ext.covar.hessian <- out.hessian$ext.covar
     }
 # end hessian covar
 
@@ -567,11 +571,16 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
                 S, X, Z,
                 pmfW, pmfM, gw=hat_gw, gm=hat_gm))
     pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
+    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
+    pmf_est <- pmf_est/sum(pmf_est)
 
-    out$PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE] / apply(pmf_est[-nrow(pmf_est),,drop=FALSE],1,sum)
-    out$PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE] / apply(pmf_est[,-ncol(pmf_est),drop=FALSE],2,sum)
-    out$PMF_PW <- apply(pmf_est[-nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum) / apply(pmf_est[-nrow(pmf_est),,drop=FALSE],1,sum)
-    out$PMF_PM <- apply(pmf_est[-nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum) / apply(pmf_est[,-ncol(pmf_est),drop=FALSE],2,sum)
+    PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
+    out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
+    PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE]
+    out$PMF_SM <- PMF_SM / (PMF_SM + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
+    PMF_PW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
+    out$PMF_PW <- 1 - out$PMF_SW
+    out$PMF_PM <- 1 - out$PMF_SM 
 
     names(out$PMF_SW) <- paste0("PMF_Single.W.",cnW)
     names(out$PMF_SM) <- paste0("PMF_Single.M.",cnM)
@@ -588,6 +597,9 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
     }
     names(out$LOGODDS_SW) <- paste0("LOD_Single.W.",cnW)
     names(out$LOGODDS_SM) <- paste0("LOD_Single.M.",cnM)
+
+    out$solution[NumBeta+(1:NumGammaW)] <- out$LOGODDS_SW
+    out$solution[NumBeta+NumGammaW+(1:NumGammaM)] <- out$LOGODDS_SM
 
     pmfN_households <- pmfN
     pmfN_households[-nrow(pmfN), -ncol(pmfN)] <- 0.5*pmfN[-nrow(pmfN), -ncol(pmfN)]
@@ -606,15 +618,6 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
       out$loglik.null <- out$loglik
       out$null_coefficients = out$coefficients     
     }
-
-    out$pmf <- pmf
-    out$pmfW=pmfW; out$pmfM=pmfM
-    out$pmfN=pmfN
-    if (sampling_design %in% c("census", "stock-stock")) { 
-      pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-      pmf_est <- pmf_est/sum(pmf_est)
-    }
-    out$pmf_est <- pmf_est
 
     out$counts=counts
     out$Sd=S; out$Xd=X; out$Zd=Z
@@ -656,12 +659,14 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
 
      if(control$ncores > 1){
       doFuture::registerDoFuture()
-      cl <- parallel::makeCluster(control$ncores)
+      cl <- parallel::makeCluster(control$ncores, type=control$parallel.type)
       future::plan(cluster, workers = cl)
       if(Sys.info()[["sysname"]] == "Windows"){
         future::plan(multisession)  ## on MS Windows
       }else{
-        future::plan(multicore)     ## on Linux, Solaris, and macOS
+        if(control$parallel.type!="MPI"){
+          future::plan(multisession)     ## on Linux, Solaris, and macOS
+        }
       }
       if (!is.null(control$seed)) {
         doRNG::registerDoRNG(control$seed)
@@ -742,6 +747,8 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
   
         # adjust for outside option (remain single)
 
+        Jw <- (0.65+0.15*N/(N+50))*sqrt(num_women) # small-population adjustment to the choice. Asymptotes out to Menzell (sqrt(cN))
+        Jm <- (0.65+0.15*N/(N+50))*sqrt(num_men)   # for c = 1/(exp(gm)+exp(gw))
         Jw <- sqrt(num_men)
         Jm <- sqrt(num_women) 
     }
@@ -802,10 +809,38 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
 #  bias-correct these
     coef.boot.bias <- apply(out.boot, 2, stats::median, na.rm=TRUE) - th_hat
     out$coefficients <- th_hat-coef.boot.bias
+#   recompute pmf_est
+    hat_gw <- out$coefficients[NumBeta+NumGamma+1]
+    hat_gm <- log(1-exp(hat_gw))
+      pmf_est <- exp(augpmfnew(out$coefficients[1:NumBeta],
+                  GammaW=out$coefficients[NumBeta+(1:NumGammaW)], 
+                  GammaM=out$coefficients[(NumBeta+NumGammaW)+(1:NumGammaM)],
+                  S, X, Z,
+                  pmfW, pmfM, gw=hat_gw, gm=hat_gm))
+    pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
+    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
+    pmf_est <- pmf_est/sum(pmf_est)
+    PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
+    out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
+    PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE]
+    out$PMF_SM <- PMF_SM / (PMF_SM + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
+    PMF_PW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
+    out$PMF_PW <- 1 - out$PMF_SW
+    out$PMF_PM <- 1 - out$PMF_SM 
+    if(control$logodds_single){
+      b <- sum(out$PMF_SW*pmfW)
+      out$LOGODDS_SW <- out$coefficients[(NumBeta+1):(NumBeta+NumGammaW)] - log(b/(1-b))
+      b <- sum(out$PMF_SM*pmfM)
+      out$LOGODDS_SM <- out$coefficients[(NumBeta+NumGammaW+1):(NumBeta+NumGammaW+NumGammaM)] - log(b/(1-b))
+    }else{
+      out$LOGODDS_SW <- log(out$PMF_SW/(1-out$PMF_SW))
+      out$LOGODDS_SM <- log(out$PMF_SM/(1-out$PMF_SM))
+    }
     coef.boot.bias.LOGODDS <- apply(out.boot.LOGODDS, 2, stats::median, na.rm=TRUE) - th_hat[NumBeta+(1:NumGamma)]
-    out$LOGODDS.SW <- out$LOGODDS.SW-coef.boot.bias.LOGODDS[1:NumGammaW]
-    out$LOGODDS.SM <- out$LOGODDS.SM-coef.boot.bias.LOGODDS[NumGammaW+(1:NumGammaM)]
-#
+
+    out$coefficients[NumBeta+(1:NumGammaW)] <- out$LOGODDS_SW
+    out$coefficients[NumBeta+NumGammaW+(1:NumGammaM)] <- out$LOGODDS_SM
+
     out$ext.covar <- stats::cov(out.boot)
     if(control$robust.cov){
       pos.IQR <- apply(out.boot,2,stats::IQR,na.rm=TRUE)>0
@@ -868,6 +903,11 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
     out$num_men <- num_men
     out$nobs <- num_sampled
     
+    out$pmf <- pmf
+    out$pmfW=pmfW; out$pmfM=pmfM
+    out$pmfN=pmfN
+    out$pmf_est <- pmf_est
+
     class(out) <- "rpm"
     
     return(out)

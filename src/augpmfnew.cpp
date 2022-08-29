@@ -19,6 +19,7 @@ pmfM, double gw, double gm) {
   unsigned int i,j,k;
   double Ustar, Vstar, Wstar;
 
+  arma::mat delta=arma::eye(NumGamma,NumGamma);
   arma::vec Gamma(NumGamma);
   arma::vec GammaOrig(NumGamma);
   arma::vec GammaDiff(NumGamma);
@@ -26,21 +27,23 @@ pmfM, double gw, double gm) {
   arma::mat J(NumGamma,NumGamma);
   GammaOrig = join_cols(GammaW,GammaM);
   Gamma = join_cols(GammaW,GammaM);
+  delta = 1E-6 * delta;
 
 //Next are Newton-Raphson iterations to find Gamma as the root of eqcond
 //given beta
   eqcond = PSeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm);
-  J = PSgeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm);
+  J = PSgeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm)+delta;
   GammaDiff = arma::inv(J)*eqcond;
   Gamma = Gamma - GammaDiff;
   while (dot(GammaDiff,GammaDiff) > 1E-9 && it < 40u) {
    eqcond = PSeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm);
-   J = PSgeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm);
+   J = PSgeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm)+delta;
    GammaDiff = arma::inv(J)*eqcond;
    Gamma = Gamma - GammaDiff;
    if(std::isnan(Gamma(0))){
      Gamma = GammaOrig;
    }
+   it++;
   }
 
   GammaW = Gamma.head(NumGammaW);

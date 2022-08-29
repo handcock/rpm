@@ -107,7 +107,7 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         if(Sys.info()[["sysname"]] == "Windows"){
           future::plan("multisession")  ## on MS Windows
         }else{
-          future::plan("multicore")     ## on Linux, Solaris, and macOS
+          future::plan("multisession")  ## on Linux, Solaris, and macOS
         }
         ### initialize parallel random number streams
         if (!is.null(seed) | !is.null(control$seed)) {
@@ -131,6 +131,8 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
                 object$Sd, object$Xd, object$Zd,
                 pmfW, pmfM, gw=hat_gw, gm=hat_gm))
             pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
+            pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
+            pmf_target <- pmf_target/sum(pmf_target)
           }else{
             pmf_target <- augpmfWM(
                 pmfW=object$pmfW, pmfM=object$pmfM, pmf=object$pmf, gw=object$gw, gm=object$gm,
@@ -589,7 +591,7 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         Jw <- sqrt(num_men)
         Jm <- sqrt(num_women)
 
-        rpm.simulate.small.population.worker <- function(object, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms, Xid, Zid, pair_id, Xu, Zu){
+        rpm.simulate.small.population.worker <- function(object, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms){
           eta  <- -log(-log(matrix(stats::runif(num_women * num_men), num_women)))
           zeta <- -log(-log(matrix(stats::runif(num_women * num_men), num_men)))
   
@@ -607,12 +609,12 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           ############## temp to match one-to-one#################
           mu = Gale_Shapley(U, V, return.data.frame=TRUE)
           mu=data.frame(mu, type=c(Ws, Ms), sampled=rep(TRUE,nrow(mu)))
-          colnames(mu)[c(1,3)] <- c(Xid, pair_id)
+          colnames(mu)[c(1,3)] <- c(object$Xid, object$pair_id)
           Xdata <- subset(mu, gender=="F")
-          Xdata <- data.frame(Xdata,as.data.frame(Xu[Ws,-1,drop=FALSE]))
+          Xdata <- data.frame(Xdata,as.data.frame(object$Xu[Ws,-1,drop=FALSE]))
           Zdata <- subset(mu, gender=="M")
-          Zdata <- data.frame(Zdata,as.data.frame(Zu[Ms,-1,drop=FALSE]))
-          colnames(Zdata)[match(Xid,colnames(Zdata))] <- Zid
+          Zdata <- data.frame(Zdata,as.data.frame(object$Zu[Ms,-1,drop=FALSE]))
+          colnames(Zdata)[match(object$Xid,colnames(Zdata))] <- object$Zid
           # random permute to add randomness
           list(population=list(Xdata=Xdata[sample.int(nrow(Xdata)),],
                                Zdata=Zdata[sample.int(nrow(Zdata)),]) )
@@ -622,15 +624,13 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           out.list <-
            foreach::foreach (i=1:nsim, .packages=c('rpm')
            ) %dorng% {
-           rpm.simulate.small.population.worker(object, num_women, num_men, Jw, Jm,
-             U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$pair_id, object$Xu, object$Zu)
+           rpm.simulate.small.population.worker(object, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms)
            }
           parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){
-           out.list[[i]] <- rpm.simulate.small.population.worker(object, num_women, num_men, Jw, Jm,
-             U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$pair_id, object$Xu, object$Zu)
+           out.list[[i]] <- rpm.simulate.small.population.worker(object, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms)
           }
         }
       }

@@ -67,11 +67,26 @@
 #'    For categorical attributes,
 #'    see \code{W_factor}.
 #'   }
-#'  \item{\code{WtoM_diff(attr)} (quantitative attribute), \code{WtoM_diff(attr)}
-#'    (quantitative attribute)}{\emph{Difference:}
+#'  \item{\code{diff(attr)} (quantitative attribute), \code{diff(attr)}
+#'    (quantitative attribute)}{\emph{Woman's Gap:}
 #'    The \code{attr} argument specifies a quantitative attribute
 #'    This term adds one statistic to the model
-#'    \code{attr[i]-attr[j]} for women \eqn{i} and man \eqn{j}.
+#'    being \code{attr[i]-attr[j]} for women \eqn{i} and man \eqn{j}.
+#'    Specifically, it is the excess of the woman's value over the man's value.
+#'   }
+#'  \item{\code{WtoM_diff(attr, diff)} (ordinal categorical attribute), \code{WtoM_diff(attr)}
+#'    (ordinal categorical discrete attribute)}{\emph{Woman's Gap:}
+#'    The \code{attr} argument specifies a ordinal categorical attribute
+#'    This term adds one statistic to the model
+#'    being an indicator that \code{attr[i]=attr[j]+diff} for women \eqn{i} and man \eqn{j}.
+#'    Specifically, it indicates if the woman's value is \code{diff} higher than the man's value.
+#'   }
+#'  \item{\code{MtoW_diff(attr, diff)} (ordinal categorical attribute), \code{MtoW_diff(attr)}
+#'    (ordinal categorical discrete attribute)}{\emph{Man's Gap:}
+#'    The \code{attr} argument specifies a ordinal categorical attribute
+#'    This term adds one statistic to the model
+#'    being an indicator that \code{attr[j]=attr[i]+diff} for women \eqn{i} and man \eqn{j}.
+#'    Specifically, it indicates if the man's value is \code{diff} higher than the woman's value.
 #'   }
 #'  \item{\code{MtoW_diff(attr)} (quantitative attribute), \code{MtoW_diff(attr)}
 #'    (quantitative attribute)}{\emph{Difference:}

@@ -330,6 +330,18 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
                        Znames = c(Znames, paste("M_greaterthan", attrname, sep="."))
                    }
                },
+               diff = {
+                   
+                   if(length(model.terms[[i]])<2){
+                     stop("The 'diff' term requires a first argument, the attribute to take the difference of.")
+                   } 
+                   attrname = as.character(model.terms[[i]][[2]])
+                       
+                   X = abind::abind(X,
+                             1*outer(Xall[,attrname], Zall[,attrname], function(x,z){x-z}),  
+                             along = 3)
+                   Xnames = c(Xnames, paste("diff", attrname, sep="."))
+               },
                WtoM_diff = {
                    
                    if(length(model.terms[[i]])<2){

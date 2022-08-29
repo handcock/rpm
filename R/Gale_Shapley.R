@@ -10,6 +10,7 @@
 #' In other words, the utility is computed from man \code{j}'s perspective.
 #' @param return.data.frame logical Should a \code{data.frame} of the matching be returned instead of the
 #' paring matrix mu?
+#' @param NTU logical Should the matching be transferable utility or non-transferable utility (the default)? 
 #' @param cpp logical Should the \code{Rcpp} version of the code be used. This is much faster and uses a lot less memory.
 #' @return The function return depends on the \code{return.data.frame} value. 
 #' If TRUE, it returns
@@ -31,7 +32,7 @@
 #'@importFrom Rcpp evalCpp
 #'@useDynLib rpm
 
-Gale_Shapley <- function(U,V,return.data.frame=FALSE, cpp=TRUE){
+Gale_Shapley <- function(U,V,return.data.frame=FALSE, NTU=TRUE, cpp=TRUE){
 
 # women (U) are the proposing side, with women listed as rows
 
@@ -45,51 +46,56 @@ Gale_Shapley <- function(U,V,return.data.frame=FALSE, cpp=TRUE){
   V <- sweep(V[,-1],1,V[,1],"-")
   storage.mode(U) <- "integer"
   storage.mode(V) <- "integer"
-  mu <- GSi(U,V)
+  if (NTU) {
+    mu <- GSi_NTU(U,V)
+  } else {
+    mu <- GS_TU(U,V)
+  }
   rm(U,V)
  }else{
-  U <- sweep(U[,-1],1,U[,1],"-")
-  V <- sweep(V[,-1],1,V[,1],"-")
-  nmax <- 10*nw*nm
-
-  for (i in 1:nmax){
+   U <- sweep(U[,-1],1,U[,1],"-")
+   V <- sweep(V[,-1],1,V[,1],"-")
+   nmax <- 10*nw*nm
+   
+   for (i in 1:nmax){
+     
      Prop <- PropMax(U)
      PropV <- Prop*t(V)
      Rej <- (PropV < sweep(Prop,2,colMax(rbind(PropV,0)),"*"))
      U[Rej&Prop] = -1
-
+     
      if (sum(sum(Rej))==0){
-        break
+       break
      }
-  }
-
-  mu <- sweep(U,1,rowMax(cbind(U,0)),"==")
- }
-
- if(return.data.frame){
-  if(cpp){
-    w_cpp <- as.vector(mu)
-    m_cpp <- rep(0,nm)
-    m_cpp[w_cpp[w_cpp>0]] <- (1:nw)[w_cpp>0] 
-    w_cpp[w_cpp>0] <- w_cpp[w_cpp>0] + nw
-    pair_id_int <- c(w_cpp, m_cpp)
-    pair_id=as.character(as.integer(pair_id_int))
-    pair_id[pair_id=="0"] <- NA
-  }else{
-   pair_id_w=rep(NA,length=nw)
-   pair_id_w[unlist(apply(mu,1,function(x){any(x>0.5)}))] <- (nw+(1:nm))[unlist(apply(mu,1,function(x){which(x>0.5)}))]
-   pair_id_m=rep(NA,length=nm)
-   pair_id_m[unlist(apply(mu,2,function(x){any(x>0.5)}))] <- (1:nw)[unlist(apply(mu,2,function(x){which(x>0.5)}))]
+   }
    
-   pair_id_int=c(pair_id_w,pair_id_m)
-   pair_id=as.character(as.integer(pair_id_int))
-   pair_id[is.na(pair_id_int)] <- NA
-  }
-  mu <- data.frame(pid=as.character(as.integer(1:(nw+nm))),
-                   gender=rep(c("F","M"),c(nw,nm)),
-                   pair_id=pair_id)
-  return(mu)
+   mu <- sweep(U,1,rowMax(cbind(U,0)),"==")
+ }
+ 
+ if(return.data.frame){
+   if(cpp){
+     w_cpp <- as.vector(mu)
+     m_cpp <- rep(0,nm)
+     m_cpp[w_cpp[w_cpp>0]] <- (1:nw)[w_cpp>0] 
+     w_cpp[w_cpp>0] <- w_cpp[w_cpp>0] + nw
+     pair_id_int <- c(w_cpp, m_cpp)
+     pair_id=as.character(as.integer(pair_id_int))
+     pair_id[pair_id=="0"] <- NA
+   }else{
+     pair_id_w=rep(NA,length=nw)
+     pair_id_w[unlist(apply(mu,1,function(x){any(x>0.5)}))] <- (nw+(1:nm))[unlist(apply(mu,1,function(x){which(x>0.5)}))]
+     pair_id_m=rep(NA,length=nm)
+     pair_id_m[unlist(apply(mu,2,function(x){any(x>0.5)}))] <- (1:nw)[unlist(apply(mu,2,function(x){which(x>0.5)}))]
+     
+     pair_id_int=c(pair_id_w,pair_id_m)
+     pair_id=as.character(as.integer(pair_id_int))
+     pair_id[is.na(pair_id_int)] <- NA
+   }
+   mu <- data.frame(pid=as.character(as.integer(1:(nw+nm))),
+                    gender=rep(c("F","M"),c(nw,nm)),
+                    pair_id=pair_id)
+   return(mu)
  }else{
-  return(1*mu) # for matrix return
+   return(1*mu) # for matrix return
  }
 }

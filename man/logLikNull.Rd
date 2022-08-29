@@ -26,6 +26,6 @@ Calculate the null model likelihood
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{rpm}: A method for [`rpm`] fits to compute the null likelihood (that is, relative to the constant only model).
-}}
+\item \code{logLikNull(rpm)}: A method for [`rpm`] fits to compute the null likelihood (that is, relative to the constant only model).
 
+}}

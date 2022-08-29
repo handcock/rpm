@@ -4,13 +4,16 @@
 \alias{rpm.model.functions}
 \title{Creates a model function list for the continuous terms in a Revealed Preference Matchings Model}
 \usage{
-rpm.model.functions(model.terms)
+rpm.model.functions(model.terms, control)
 }
 \arguments{
 \item{model.terms}{For the details on the possible countinuous \code{<model terms>}, see
 \code{\link{rpm-terms}}. This includes the 
 covariates used to construct the model matrix.
 They are used in conjunction with the model terms.}
+
+\item{control}{A list of control parameters for algorithm tuning. Constructed using
+\code{\link{control.rpm}}, which should be consulted for specifics.}
 }
 \value{
 A list of model terms as bivariate functions.

@@ -337,16 +337,20 @@ summary_rpm <- function(formula, Xdata, Zdata,
      pmfW_S = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
      subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
      pmfW_P = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
-     pmfW = pmfW_S + 0.5*pmfW_P
+     pmfW = pmfW_S + pmfW_P
      subset=Zdata[,sampled] &  is.na(Zdata[,pair_id])
      pmfM_S = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
      subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
      pmfM_P = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
-     pmfM = pmfM_S + 0.5*pmfM_P
+     pmfM = pmfM_S + pmfM_P
     }
     if (sampling_design == "stock-flow") {
-     pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
-     pmfM = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=sampled))
+      pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
+      subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
+      pmfW = pmfW + as.numeric(stats::xtabs(Zdata$Z_w[subset] ~ factor(Xdata$Xtype[W_paired_to_sampled_M],1:num_Xu)))
+      pmfM = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=sampled))
+      subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
+      pmfM = pmfM + as.numeric(stats::xtabs(Xdata$X_w[subset] ~ factor(Zdata$Ztype[M_paired_to_sampled_W],1:num_Zu)))
     }
     if (sampling_design == "census") {
      pmfW = as.numeric(stats::xtabs(~ factor(Xtype,1:num_Xu), data=Xdata))

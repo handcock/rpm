@@ -14,6 +14,8 @@ control.rpm(
   lower.bound = -10,
   upper.bound = 10,
   maxeval = 1000,
+  bs.maxeval = 50,
+  bs.xtol_rel = 0.001,
   check_derivatives = FALSE,
   bootstrap = TRUE,
   hessian = FALSE,
@@ -25,7 +27,7 @@ control.rpm(
   logodds_single = FALSE,
   save.data = TRUE,
   robust.cov = FALSE,
-  local_opts = list(algorithm = "NLOPT_LD_SLSQP", xtol_rel = 1e-07),
+  local_opts = list(algorithm = "NLOPT_LD_SLSQP", xtol_rel = 1e-07, maxeval = maxeval),
   nbootstrap = 100,
   nbootstrap.SD = 20,
   large.population.bootstrap = 5000,
@@ -73,7 +75,16 @@ vector or a single number which is used for all bounds.}
 \item{maxeval}{integer; Stop when the number of function evaluations exceeds maxeval. This is
 not a strict maximum: the number of function evaluations may exceed
 maxeval slightly, depending upon the algorithm. Criterion is disabled
-if maxeval is non-positive. Default value: 100.}
+if maxeval is non-positive. Default value: 1000.}
+
+\item{bs.maxeval}{integer; Stop the bootstrap optimization when the number of function evaluations exceeds bs.maxeval. This is
+not a strict maximum: the number of function evaluations may exceed
+bs.maxeval slightly, depending upon the algorithm. Criterion is disabled
+if bs.maxeval is non-positive. Default value:50}
+
+\item{bs.xtol_rel}{scalar; Stop the bootstrap optimization when an optimization step (or an estimate of the optimum)
+changes every parameter by less than bs.xtol_rel multiplied by the
+absolute value of the parameter. See the parameter xtol_rel for details.}
 
 \item{check_derivatives}{logical; Compare the user-supplied analytic gradients
 with the finite difference approximations.}

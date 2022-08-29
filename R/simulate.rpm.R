@@ -71,6 +71,10 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
                          large.population=TRUE, num_sampled = NULL, bootstrap=FALSE, sampling_design=NULL,
                          control=control.rpm(), verbose = FALSE) 
 {
+      if(is.null(object$Xdata) | is.null(object$Zdata)){
+        stop('The passed rpm fitted object has a null Xdata or Zdata component. Did you specify "save.data=FALSE" in the fit?')
+      }
+
       if(!is.null(seed)) set.seed(seed)
       if(!is.null(sampling_design)){
         sampling_design <- match.arg(sampling_design, c("stock-stock","stock-flow","census"))
@@ -78,19 +82,27 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
         sampling_design <- object$sampling_design
       }
 
+      if(!is.null(N) & !is.null(num_women) & !is.null(num_men)){
+       if(abs(N - (num_women + num_men)) > 1){
+        stop('You have passed N, num_women and num_men and N != (num_women + num_men). These values are inconsistent.')
+       }
+      }
+
       rescale <- FALSE
       # The number of people in the population
-      if(object$sampling_design == "stock-stock"){
+      if(sampling_design == "stock-stock"){
         N_w = sum(object$Xdata[object$Xdata[,object$sampled] & is.na(object$Xdata[,object$pair_id]),object$X_w])
         N_w = N_w + sum(object$Zdata[object$Zdata[,object$sampled] & !is.na(object$Zdata[,object$pair_id]),object$Z_w]) # The population size
         N_m = sum(object$Zdata[object$Zdata[,object$sampled] & is.na(object$Zdata[,object$pair_id]),object$Z_w])
         N_m = N_m + sum(object$Xdata[object$Xdata[,object$sampled] & !is.na(object$Xdata[,object$pair_id]),object$X_w]) # The population size
       }
-      if(object$sampling_design == "stock-flow"){
+      if(sampling_design == "stock-flow"){
         N_w = sum(object$Xdata[object$Xdata[,object$sampled],object$X_w])
+        N_w = N_w + sum(object$Zdata[object$Zdata[,object$sampled] & !is.na(object$Zdata[,object$pair_id]),object$Z_w])
         N_m = sum(object$Zdata[object$Zdata[,object$sampled],object$Z_w])
+        N_m = N_m + sum(object$Xdata[object$Xdata[,object$sampled] & !is.na(object$Xdata[,object$pair_id]),object$X_w])
       }
-      if(object$sampling_design == "census"){
+      if(sampling_design == "census"){
         N_w = nrow(object$Xdata)
         N_m = nrow(object$Zdata)
         if(is.null(object$sampled)){
@@ -181,6 +193,21 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
       numX <- nrow(object$pmf)-1
       numZ <- ncol(object$pmf)-1
 
+      if(control$ncores > 1){
+        doFuture::registerDoFuture()
+        cl <- parallel::makeCluster(control$ncores)
+        future::plan(cluster, workers = cl)
+        if(Sys.info()[["sysname"]] == "Windows"){
+          future::plan(multisession)  ## on MS Windows
+        }else{
+          future::plan(multisession)     ## on Linux, Solaris, and macOS
+        }
+        ### initialize parallel random number streams
+        if (!is.null(control$seed)) {
+          doRNG::registerDoRNG(control$seed)
+        }
+      }
+
       if(large.population | bootstrap){
         # Use the large population aggregation
         # Or large.population==FALSE and bootstrap==TRUE
@@ -227,12 +254,12 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
             b <- match(object$Xdata[a,object$pair_id], object$Zdata[,object$Zid])
             if(any(is.na(b))){stop("Non matched W pairs")}
             w_rel <- object$Xdata[a,object$X_w]
-            w <- object$Xdata[a,object$X_w]
+            w     <- object$Xdata[a,object$X_w]
             for( k in 1:numZ){
               d <- object$Zdata$Ztype[b] == k
               if(any(d)){
                w[d] <- w[d] * pmf_target[j,k] / object$pmf[j,k]
-               w_rel[d] <- pmf_target[j,k] / object$pmf[j,k]
+               w_rel[d]    <- pmf_target[j,k] / object$pmf[j,k]
               }
             }
             X_w_rel[a] <- w_rel
@@ -242,11 +269,11 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
             a <- paired_and_sampled_M & object$Zdata$Ztype==k
             b <- match(object$Zdata[a,object$pair_id], object$Xdata[,object$Xid])
             w_rel <- object$Zdata[a,object$Z_w]
-            w <- object$Zdata[a,object$Z_w]
+            w     <- object$Zdata[a,object$Z_w]
             for( j in 1:numX){
               d <- object$Xdata$Xtype[b] == j
               if(any(d)){
-               w_rel[d] <- pmf_target[j,k] / object$pmf[j,k]
+               w_rel[d]    <- pmf_target[j,k] / object$pmf[j,k]
                w[d] <- w[d] * pmf_target[j,k] / object$pmf[j,k]
               }
             }
@@ -254,35 +281,32 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
             Z_w_new[a] <- w
           }
           # Now do singles
-          w <- object$Xdata[single_and_sampled_W,object$X_w]
+          w     <- object$Xdata[single_and_sampled_W,object$X_w]
           w_rel <- object$Xdata[single_and_sampled_W,object$X_w]
           for( j in 1:numX){
             a <- object$Xdata$Xtype[single_and_sampled_W]==j
             if(any(a)){
              w[a] <- w[a] * pmf_target[j,ncol(object$pmf)] / object$pmf[j,ncol(object$pmf)]
-             w_rel[a] <- pmf_target[j,ncol(object$pmf)] / object$pmf[j,ncol(object$pmf)]
+             w_rel[a]    <- pmf_target[j,ncol(object$pmf)] / object$pmf[j,ncol(object$pmf)]
             }
           }
           X_w_rel[single_and_sampled_W] <- w_rel
           X_w_new[single_and_sampled_W] <- w
 #
-          w <- object$Zdata[single_and_sampled_M,object$Z_w]
+          w     <- object$Zdata[single_and_sampled_M,object$Z_w]
           w_rel <- object$Zdata[single_and_sampled_M,object$Z_w]
           for( k in 1:numZ){
             a <- object$Zdata$Ztype[single_and_sampled_M]==k
             if(any(a)){
              w[a] <- w[a] * pmf_target[nrow(object$pmf),k] / object$pmf[nrow(object$pmf),k]
-             w_rel[a] <- pmf_target[nrow(object$pmf),k] / object$pmf[nrow(object$pmf),k]
+             w_rel[a]    <- pmf_target[nrow(object$pmf),k] / object$pmf[nrow(object$pmf),k]
             }
           }
           Z_w_rel[single_and_sampled_M] <- w_rel
           Z_w_new[single_and_sampled_M] <- w
-#
          object$Xdata[,object$X_w] <- X_w_new
          object$Zdata[,object$Z_w] <- Z_w_new
-#        Do the actual sampling
         }
-# Old approach
         if(sampling_design %in% c("stock-stock", "census")){
           paired_W <- !is.na(object$Xdata[,object$pair_id]) 
           paired_M <- !is.na(object$Zdata[,object$pair_id])
@@ -301,46 +325,41 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           object$Zdata[paired_M,object$sampled] <- FALSE
           object$Zdata[M_paired_to_sampled_W,object$sampled][!I] <- TRUE
         }
-        if(sampling_design %in% c("stock-flow")){
+        if(FALSE & sampling_design %in% c("stock-flow")){
           paired_W <- !is.na(object$Xdata[,object$pair_id])
           paired_M <- !is.na(object$Zdata[,object$pair_id])
-          M_paired_to_sampled_W <- match(object$Xdata[paired_W,object$pair_id], object$Zdata[,object$Zid])
+          M_paired_to_W <- match(object$Xdata[paired_W,object$pair_id], object$Zdata[,object$Zid])
           I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_M), replace=TRUE)
           a <- X_w_rel
           a[paired_W] <- 0.0
-          a[paired_W][ I] <- X_w_rel[paired_W][ I]+Z_w_rel[M_paired_to_sampled_W][ I]
-          X_w_rel <- a
+          a[paired_W][ I] <- X_w_rel[paired_W][ I]+Z_w_rel[M_paired_to_W][ I]
           object$Xdata[paired_W,object$sampled] <- FALSE
           object$Xdata[paired_W,object$sampled][ I] <- TRUE
-          a <- Z_w_rel
-          a[paired_M] <- 0.0
-          a[M_paired_to_sampled_W][!I] <- X_w_rel[paired_W][!I]+Z_w_rel[M_paired_to_sampled_W][!I]
-          Z_w_rel <- a
-          object$Zdata[paired_M,object$sampled] <- FALSE
-          object$Zdata[M_paired_to_sampled_W,object$sampled][!I] <- TRUE
+          a_new <- X_w_new
+          a_new[paired_W] <- 0.0
+          a_new[paired_W][ I] <- ifelse(object$Xdata[paired_W,object$sampled][ I],X_w_new[paired_W][ I],Z_w_new[M_paired_to_W][ I])
+          a_new[paired_W][ I] <- X_w_new[paired_W][ I]+Z_w_new[M_paired_to_W][ I]
+          X_w_new <- a_new
+          b <- Z_w_rel
+          b[M_paired_to_W] <- 0.0
+          b[M_paired_to_W][!I] <- X_w_rel[paired_W][!I] + Z_w_rel[M_paired_to_W][!I]
+          object$Zdata[M_paired_to_W,object$sampled] <- FALSE
+          object$Zdata[M_paired_to_W,object$sampled][!I] <- TRUE
+          b_new <- Z_w_new
+          b_new[M_paired_to_W] <- 0.0
+          b_new[M_paired_to_W][!I] <- ifelse(object$Zdata[M_paired_to_W,object$sampled][!I],Z_w_new[M_paired_to_W][!I],X_w_new[paired_W][!I])
+          b_new[M_paired_to_W][!I] <- X_w_new[paired_W][!I] + Z_w_new[M_paired_to_W][!I]
+          Z_w_new <- b_new
+#
+          Z_w_rel <- b
+          X_w_rel <- a
         }
   object$Xdata[,"X_w_rel"] <- X_w_new
   object$Zdata[,"Z_w_rel"] <- Z_w_new
 
-        if(control$ncores > 1){
-          doFuture::registerDoFuture()
-          cl <- parallel::makeCluster(control$ncores)
-          future::plan(cluster, workers = cl)
-          if(Sys.info()[["sysname"]] == "Windows"){
-            future::plan(multisession)  ## on MS Windows
-          }else{
-            future::plan(multicore)     ## on Linux, Solaris, and macOS
-          }
-          ### initialize parallel random number streams
-          if (!is.null(control$seed)) {
-            doRNG::registerDoRNG(control$seed)
-          }
-        }
-
         rpm.simulate.large.population.worker <- function(pmf_target, object, X_w_rel, Z_w_rel, num_sampled, num_women, num_men,numX,numZ){
 
           cts <- -pmf_target
-#
           ntries <- 0
           while( any(cts < -0.000000001) & ntries < 1000){
            for(i in 1:numX){ 
@@ -531,6 +550,20 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           ZdataS <- rbind(ZdataSingle, ZdataSampledandPartnered)
           XdataS[,object$X_w] <- XdataS[,"X_w_rel"]
           ZdataS[,object$Z_w] <- ZdataS[,"Z_w_rel"]
+
+          if(sampling_design == "stock-flow"){
+            XdataS[!is.na(XdataS[,object$pair_id]),object$X_w] <- 2*XdataS[!is.na(XdataS[,object$pair_id]),object$X_w]
+            ZdataS[!is.na(ZdataS[,object$pair_id]),object$Z_w] <- 2*ZdataS[!is.na(ZdataS[,object$pair_id]),object$Z_w]
+            ZdataS[,object$Z_w] <- 20*ZdataS[,object$Z_w]
+            if(nrow(XdataW_paired_to_sampled_M)>0) XdataW_paired_to_sampled_M[,object$sampled] <- FALSE
+            if(nrow(ZdataM_paired_to_sampled_W)>0) ZdataM_paired_to_sampled_W[,object$sampled] <- FALSE
+          } else { #if (sampling_design == "stock-stock"){
+            XdataS[!is.na(XdataS[,object$pair_id]),object$X_w] <- 2*XdataS[!is.na(XdataS[,object$pair_id]),object$X_w]
+            ZdataS[!is.na(ZdataS[,object$pair_id]),object$Z_w] <- 2*ZdataS[!is.na(ZdataS[,object$pair_id]),object$Z_w]
+            if(nrow(XdataW_paired_to_sampled_M)>0) XdataW_paired_to_sampled_M[,object$sampled] <- TRUE
+            if(nrow(ZdataM_paired_to_sampled_W)>0) ZdataM_paired_to_sampled_W[,object$sampled] <- TRUE
+          }
+
           w <- XdataS[,object$X_w]
           for( j in 1:numX){
             a <- XdataS$Xtype==j
@@ -549,13 +582,6 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           }
           ZdataS[,object$Z_w] <- w
 
-          if(sampling_design == "stock-flow"){
-            if(nrow(XdataW_paired_to_sampled_M)>0) XdataW_paired_to_sampled_M[,object$sampled] <- FALSE
-            if(nrow(ZdataM_paired_to_sampled_W)>0) ZdataM_paired_to_sampled_W[,object$sampled] <- FALSE
-          } else { #if (sampling_design == "stock-stock"){
-            if(nrow(XdataW_paired_to_sampled_M)>0) XdataW_paired_to_sampled_M[,object$sampled] <- TRUE
-            if(nrow(ZdataM_paired_to_sampled_W)>0) ZdataM_paired_to_sampled_W[,object$sampled] <- TRUE
-          }
           Xdata <- rbind(XdataS, XdataW_paired_to_sampled_M)
           Zdata <- rbind(ZdataS, ZdataM_paired_to_sampled_W)
     
@@ -637,7 +663,6 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
         }
   
         # adjust for outside option (remain single)
-
         Jw <- sqrt(num_men)
         Jm <- sqrt(num_women)
 
@@ -677,18 +702,16 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
             X_w_rel[paired_W] <- 0.0
             X_w_rel[paired_W][ I] <- 1# num_sampled / (nrow(Xdata)+nrow(Zdata))
             Z_w_rel[paired_M] <- 0.0
-            #Z_w_rel[paired_M][!I] <- 1# num_sampled / (nrow(Xdata)+nrow(Zdata))
             Z_w_rel[M_paired_to_sampled_W][!I] <- 1.0
           }
           if(sampling_design %in% c("stock-flow")){
             paired_W <- !is.na(Xdata[,pair_id])
-            paired_M <- !is.na(Zdata[,pair_id])
-            M_paired_to_sampled_W <- match(Xdata[paired_W,pair_id], Zdata[,Zid])
-            I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_M), replace=TRUE)
+            M_paired_to_W <- match(Xdata[paired_W,pair_id], Zdata[,Zid])
+            I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_W), replace=TRUE)
             X_w_rel[paired_W] <- 0.0
             X_w_rel[paired_W][ I] <- 2
-            Z_w_rel[paired_M] <- 0.0
-            Z_w_rel[M_paired_to_sampled_W][!I] <- 2.0
+            Z_w_rel[M_paired_to_W] <- 0.0
+            Z_w_rel[M_paired_to_W][!I] <- 2
           }
           if(num_sampled > sum(c(X_w_rel,Z_w_rel) > 0)){
            stop(sprintf("The number of households to be sampled, num_sampled=%d, is greater than the number of households in the population, %d.",

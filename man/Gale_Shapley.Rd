@@ -4,7 +4,7 @@
 \alias{Gale_Shapley}
 \title{This is the version of Gale-Shapley stable matching algorithm (translated from the Matlab code in Menzel (2015)).}
 \usage{
-Gale_Shapley(U, V, return.data.frame = FALSE, cpp = TRUE)
+Gale_Shapley(U, V, return.data.frame = FALSE, NTU = TRUE, cpp = TRUE)
 }
 \arguments{
 \item{U}{The utility matrix for the women's side. Each row is a woman, each column is a man.
@@ -17,6 +17,8 @@ In other words, the utility is computed from man \code{j}'s perspective.}
 
 \item{return.data.frame}{logical Should a \code{data.frame} of the matching be returned instead of the
 paring matrix mu?}
+
+\item{NTU}{logical Should the matching be transferable utility or non-transferable utility (the default)?}
 
 \item{cpp}{logical Should the \code{Rcpp} version of the code be used. This is much faster and uses a lot less memory.}
 }

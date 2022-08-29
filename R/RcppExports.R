@@ -2,8 +2,18 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' @export
-GSi <- function(U, V) {
-    .Call('_rpm_GSi', PACKAGE = 'rpm', U, V)
+GS <- function(U, V) {
+    .Call('_rpm_GS', PACKAGE = 'rpm', U, V)
+}
+
+#' @export
+GS_TU <- function(U, V) {
+    .Call('_rpm_GS_TU', PACKAGE = 'rpm', U, V)
+}
+
+#' @export
+GSi_NTU <- function(U, V) {
+    .Call('_rpm_GSi_NTU', PACKAGE = 'rpm', U, V)
 }
 
 #' @export

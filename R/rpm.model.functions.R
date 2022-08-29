@@ -8,6 +8,8 @@
 #' \code{\link{rpm-terms}}. This includes the 
 #' covariates used to construct the model matrix.
 #' They are used in conjunction with the model terms. 
+#' @param control A list of control parameters for algorithm tuning. Constructed using
+#' \code{\link{control.rpm}}, which should be consulted for specifics. 
 #' @return A list of model terms as bivariate functions.
 #' @seealso rpm
 #' @references Menzel, Konrad (2015).
@@ -18,7 +20,7 @@
 #' # nothing yet
 #' @export rpm.model.functions
 #' 
-rpm.model.functions = function(model.terms)
+rpm.model.functions = function(model.terms, control)
 {
     # assumes Xall and Zall are the unique types
     
@@ -26,23 +28,44 @@ rpm.model.functions = function(model.terms)
     
     # returned variables
     S = Sr = Spaired = list()
-    Snames = NULL
+    Snames = AlphaS_K = NULL
     
     for(i in 1:ncov)
     {
         switch(as.character(model.terms[[i]][[1]]),
                absdiff = {
                    
-                   attrname = as.character(model.terms[[i]][[2]])
                    S = c(S, 
-                         function(x,z,K=NULL){1*(abs(x-z))}
+                         function(x,z,K=NULL,xr=NULL,zr=NULL){
+                          x = as.matrix(x); z = as.matrix(z); 
+                          if(!is.null(xr)){
+                            x = sweep(sweep(x,2,xr[2,]-xr[1,],"*"),2,xr[1,],"+")
+                            z = sweep(sweep(z,2,zr[2,]-zr[1,],"*"),2,zr[1,],"+")
+                          }
+                          as.vector(1*(abs(x-z)))
+                         }
                         )
                    Sr = c(Sr, 
-                         function(x,z,K=NULL){1*(abs(x-z))}
+                         function(x,z,K=NULL,xr=NULL,zr=NULL){
+                          x = as.matrix(x); z = as.matrix(z); 
+                          if(!is.null(xr)){
+                            x = sweep(sweep(x,2,xr[2,]-xr[1,],"*"),2,xr[1,],"+")
+                            z = sweep(sweep(z,2,zr[2,]-zr[1,],"*"),2,zr[1,],"+")
+                          }
+                          as.vector(1*(abs(x-z)))
+                         }
                         )
                    Spaired = c(Spaired, 
-                         function(x,z,K=NULL){1*(abs(x-z))}
+                         function(x,z,K=NULL,xr=NULL,zr=NULL){
+                          x = as.matrix(x); z = as.matrix(z); 
+                          if(!is.null(xr)){
+                            x = sweep(sweep(x,2,xr[2,]-xr[1,],"*"),2,xr[1,],"+")
+                            z = sweep(sweep(z,2,zr[2,]-zr[1,],"*"),2,zr[1,],"+")
+                          }
+                          as.vector(1*(abs(x-z)))
+                         }
                         )
+                   AlphaS_K = c(AlphaS_K, 1)
                    Snames = c(Snames, "absdiff")
                },
                WtoM_diff = {
@@ -54,6 +77,7 @@ rpm.model.functions = function(model.terms)
                        
                    S = c(S,
                          function(x,z){1*(x-z)})  
+                   AlphaS_K = c(AlphaS_K, 1)
                    Snames = c(Snames, paste("WtoM_diff", attrname, sep="."))
                },
                MtoW_diff = {
@@ -68,6 +92,7 @@ rpm.model.functions = function(model.terms)
                    
                    S = c(S,
                          function(z,x){1*(z-x)})  
+                   AlphaS_K = c(AlphaS_K, 1)
                    Snames = c(Snames, paste("MtoW_diff", attrname, sep="."))
                },
                # default
@@ -81,5 +106,6 @@ rpm.model.functions = function(model.terms)
     names(S) = Snames
     names(Sr) = Snames
     names(Spaired) = Snames
-    return(list(S=S,Sr=Sr,Spaired=Spaired))
+    names(AlphaS_K) = Snames
+    return(list(S=S,Sr=Sr,Spaired=Spaired,AlphaS_K=AlphaS_K))
 }

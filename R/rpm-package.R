@@ -20,7 +20,7 @@
 #' to be cited as:
 #' 
 #' Mark S. Handcock, Ryan Admiraal, Fiona C. Yeung and Shuchi Goyal (2020) \pkg{rpm}: Modeling of Revealed Preferences Matchings
-#' R package, Los Angeles, CA.  Version 0.60, \url{http://statnet.org}.
+#' R package, Los Angeles, CA.  Version 0.60, \url{https://statnet.org}.
 #' 
 #' All programs derived from this package must cite it. For complete citation
 #' information, use\cr \code{citation(package="rpm")}.

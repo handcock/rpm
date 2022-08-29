@@ -2,7 +2,7 @@ Package: rpm
 Type: Package
 Title: Modeling of Revealed Preferences Matchings
 Version: 0.60
-Date: 2021-12-17
+Date: 2022-04-11
 Authors@R: c(person("Mark S.", "Handcock", role=c("aut","cre"), email="handcock@stat.ucla.edu"),
         person("Ryan Admiraal", "Admiraal", role=c("aut"), email="ryan.admiraal@vuw.ac.nz"),
         person("Fiona C. Yeung", "Yeung", role=c("aut"), email="fiona.c.yeung@gmail.com"),
@@ -10,7 +10,7 @@ Authors@R: c(person("Mark S.", "Handcock", role=c("aut","cre"), email="handcock@
 Maintainer: Mark S. Handcock <handcock@stat.ucla.edu>
 Description: Statistical estimation of revealed preference models from data collected on bipartite matchings.
 License: GPL-3 + file LICENSE
-URL: http://www.stat.ucla.edu/~handcock
+URL: https://handcock.github.io
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     R (>= 3.6.0),
@@ -31,4 +31,4 @@ Imports:
     doFuture,
     foreach
 Encoding: UTF-8
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1

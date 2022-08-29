@@ -15,8 +15,7 @@ gof(object, ...)
   empirical_p = FALSE,
   nsim = 1000,
   seed = NULL,
-  parallel = FALSE,
-  ncores = NA,
+  ncores = 1,
   parallel.type = "SOCK",
   compare_sim = "sim-est",
   verbose = FALSE
@@ -37,14 +36,10 @@ by \code{object}; Must be specified if \code{empirical_p} is TRUE}
 
 \item{seed}{integer; (Optional) random number seed.}
 
-\item{parallel}{logical, with default FALSE; if `TRUE`, then the function will use parallel processing
-when computing empirical p value}
+\item{ncores}{integer; number of cores to use for parallel processing; If greater than 1
+then the function will use parallel processing when computing empirical p value}
 
-\item{ncores}{integer; number of cores to use for parallel processing; must be specified if
-parallel is TRUE}
-
-\item{parallel.type}{string; type of clister to create. Typically, "POCK" or "MPI".
-parallel is TRUE}
+\item{parallel.type}{string; type of cluster to create. Typically, "POCK" or "MPI".}
 
 \item{compare_sim}{string; describes which two objects are compared to compute simulated goodness-of-fit
 statistics; valid values are \code{"sim-est"}: compares the marginal distribution of pairings in a
@@ -63,8 +58,8 @@ additional information, including data summary statistics.}
 }
 \value{
 \code{\link{gof.rpm}} returns a list consisting of the following elements:
-\item{obs_pmf}{numeric matrix giving observed probability mass distribution over different household types}
-\item{observed_pmf_est}{numeric matrix giving expected probability mass distribution from \code{rpm} model}
+\item{observed_pmf}{numeric matrix giving observed probability mass distribution over different household types}
+\item{model_pmf}{numeric matrix giving expected probability mass distribution from \code{rpm} model}
 \item{obs_chi_sq}{the count-based observed chi-square statistic comparing marginal distributions of the population
 the data and the model estimate}
 \item{obs_chi_sq_cell}{the contribution to the observed chi-squared statistic by household type}
@@ -108,13 +103,16 @@ to \code{\link{rpm}}. This function simulates from such a model.
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{rpm}: Calculate goodness-of-fit statistics for Revealed Preference Matchings Model based on observed data
+\item \code{gof(rpm)}: Calculate goodness-of-fit statistics for Revealed Preference Matchings Model based on observed data
 
-\item \code{gofrpm}: \code{\link{plot.gofrpm}} plots diagnostics such empirical p-value
+}}
+\section{Functions}{
+\itemize{
+\item \code{plot(gofrpm)}: \code{\link{plot.gofrpm}} plots diagnostics such empirical p-value
 based on chi-square statistics and KL divergences.
 See \code{\link{rpm}} for more information on these models.
-}}
 
+}}
 \examples{
 library(rpm)
 data(fauxmatching)

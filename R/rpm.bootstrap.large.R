@@ -10,7 +10,6 @@ rpm.bootstrap.large <- function(I, solution,
         paired_W <- !is.na(Xdata[,pair_id]) 
         M_paired_to_W <- match(Xdata[paired_W,pair_id], Zdata[,Zid])
         I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_W), replace=TRUE)
-      # I <- rep(TRUE, sum(paired_M))
         X_w_rel[paired_W] <- 0.0
         X_w_rel[paired_W][ I] <- 1
         Z_w_rel[M_paired_to_W] <- 0.0
@@ -29,23 +28,18 @@ rpm.bootstrap.large <- function(I, solution,
              replace=TRUE,size=num_sampled-sum(paired_W)))
       }
       if(sampling_design == "stock-flow"){
-        X_w_rel[!Xdata[,sampled]] <- 0.0
-        Z_w_rel[!Zdata[,sampled]] <- 0.0
-      # paired_W <- !is.na(Xdata[,pair_id]) 
-      # paired_M <- !is.na(Zdata[,pair_id])
-      # M_paired_to_W <- match(Xdata[paired_W,pair_id], Zdata[,Zid])
-      # I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_M), replace=TRUE)
-      # X_w_rel[paired_W] <- 0.0
-      # X_w_rel[paired_W][ I] <- 2
-      # Z_w_rel[paired_M] <- 0.0
-      # Z_w_rel[M_paired_to_W][!I] <- 2
+        paired_W <- !is.na(Xdata[,pair_id]) 
+        M_paired_to_W <- match(Xdata[paired_W,pair_id], Zdata[,Zid])
+        I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_W), replace=TRUE)
+        X_w_rel[paired_W] <- 0.0
+        X_w_rel[paired_W][ I] <- 2
+        Z_w_rel[M_paired_to_W] <- 0.0
+        Z_w_rel[M_paired_to_W][!I] <- 2
         I <- sample(c(Xdata[,Xid],
                       Zdata[,Zid]),
                       prob=c(X_w_rel,Z_w_rel),
-                    replace=FALSE,size=num_sampled)
+                    replace=TRUE,size=num_sampled)
       }
-   #  I <- c(Xdata[X_w_rel>0,Xid], Zdata[Z_w_rel>0,Zid])
-   #  I <- sample(I, replace=TRUE, size=num_sampled) # Finite population adjustment
       Xmatch <- match(I,Xdata[,Xid])
       Xmatch <- Xmatch[!is.na(Xmatch)]
       Zmatch <- match(I,Zdata[,Zid])
@@ -63,6 +57,8 @@ rpm.bootstrap.large <- function(I, solution,
       if(sampling_design == "stock-flow"){
         if(nrow(XdataS)>0) XdataS[,sampled] <- TRUE
         if(nrow(ZdataS)>0) ZdataS[,sampled] <- TRUE
+        if(nrow(XdataS)>0) XdataS[paired_and_sampled_W,X_w] <- XdataS[paired_and_sampled_W,X_w] + ZdataW[,Z_w]
+        if(nrow(ZdataS)>0) ZdataS[paired_and_sampled_M,Z_w] <- ZdataS[paired_and_sampled_M,Z_w] + XdataM[,X_w]
         if(nrow(XdataM)>0) XdataM[,X_w] <- 0
         if(nrow(ZdataW)>0) ZdataW[,Z_w] <- 0
         if(nrow(XdataM)>0) XdataM[,sampled] <- FALSE
@@ -97,20 +93,24 @@ rpm.bootstrap.large <- function(I, solution,
        pmfM = as.numeric(stats::xtabs(~ factor(Ztype,1:num_Zu), data=Zdata))
       }
       if (sampling_design == "stock-stock") {
-       subset=Xdata[,sampled] & is.na(Xdata[,pair_id])
+       subset=Xdata[,sampled] &  is.na(Xdata[,pair_id])
        pmfW_S = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
        subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
        pmfW_P = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
-       pmfW = pmfW_S + 0.5*pmfW_P
-       subset=Zdata[,sampled] & is.na(Zdata[,pair_id])
-       pmfM_S  = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
+       pmfW = pmfW_S + pmfW_P
+       subset=Zdata[,sampled] &  is.na(Zdata[,pair_id])
+       pmfM_S = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
        subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
        pmfM_P = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
-       pmfM = pmfM_S + 0.5*pmfM_P
+       pmfM = pmfM_S + pmfM_P
       }
       if (sampling_design == "stock-flow") {
-       pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
-       pmfM = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=sampled))
+        pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
+        subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
+        pmfW = pmfW + as.numeric(stats::xtabs(Zdata$Z_w[subset] ~ factor(Xdata$Xtype[W_paired_to_sampled_M],1:num_Xu)))
+        pmfM = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=sampled))
+        subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
+        pmfM = pmfM + as.numeric(stats::xtabs(Xdata$X_w[subset] ~ factor(Zdata$Ztype[M_paired_to_sampled_W],1:num_Zu)))
       }
       pmfW = pmfW/sum(pmfW)
       pmfM = pmfM/sum(pmfM)
@@ -133,7 +133,6 @@ rpm.bootstrap.large <- function(I, solution,
       
       # The number of people in the population
       if(sampling_design == "stock-stock"){
-    #  if (sampling_design == "stock-stock") {
         N_w = sum(Xdata[Xdata[,sampled] & is.na(Xdata[,pair_id]),X_w])
         N_w = N_w + sum(Zdata[Zdata[,sampled] & !is.na(Zdata[,pair_id]),Z_w]) # The population size
         N_m = sum(Zdata[Zdata[,sampled] & is.na(Zdata[,pair_id]),Z_w])
@@ -168,13 +167,11 @@ rpm.bootstrap.large <- function(I, solution,
         pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu) + factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu) + factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
         pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
         counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-       #counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
       }
       if (sampling_design == "stock-stock") {
         Xtype_single = as.numeric(stats::xtabs(X_w ~ factor(Xtype, 1:num_Xu), data=Xdata, subset=X_sel)) 
         Ztype_single = as.numeric(stats::xtabs(Z_w ~ factor(Ztype, 1:num_Zu), data=Zdata, subset=Z_sel))
         pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-#       pmf[1:num_Xu,1:num_Zu] <- 2*as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[,"Ztype"],1:num_Zu)))
         pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
         counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu)))
         counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
@@ -184,9 +181,7 @@ rpm.bootstrap.large <- function(I, solution,
         Ztype_single = as.numeric(stats::xtabs(Z_w ~ factor(Ztype, 1:num_Zu), data=Zdata, subset=Z_sel))
         pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
         pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
-      # counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu)))
         counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-        counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
       }
 
       if (!is.empty(Xcounts_single)) {
@@ -198,17 +193,14 @@ rpm.bootstrap.large <- function(I, solution,
         counts[1+num_Xu,1:num_Zu] = Zcounts_single
       }
   
-      # The proportion of households in the population of each (X,Z) pair
-      #pmf <- pmf / sum(pmf)
-
       if (sampling_design == "census") { 
         pmfN <- pmf*num_sampled
       }else{
         pmfN <- counts
-       #if (sampling_design == "stock-flow") pmfN[1:num_Xu,1:num_Zu] <- 2*pmfN[1:num_Xu,1:num_Zu] 
       }
-      # pmfN <- counts
 
+      control$xtol_rel=control$bs.xtol_rel
+      control$maxeval=control$bs.maxeval
       out.text <- capture.output(
        out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun_default, 
                  eval_grad_f=gloglikfun_default,
@@ -220,7 +212,7 @@ rpm.bootstrap.large <- function(I, solution,
                  opts=control)
       )
       if(any(startsWith("Error",c(" ",out.text)))){
-        message(sprintf("Optimization for starting value %d is overly constrained. Estimates may be unstable.",i))
+        message(sprintf("Optimization for starting at the MPLE is overly constrained. Estimates may be unstable."))
       }
 
       th_hat <-  out.fit$solution
@@ -230,15 +222,19 @@ rpm.bootstrap.large <- function(I, solution,
                 GammaW=th_hat[NumBeta+(1:NumGammaW)], 
                 GammaM=th_hat[(NumBeta+NumGammaW)+(1:NumGammaM)],
                 S, X, Z,
-                pmfW, pmfM, hat_gw, hat_gm))
+                pmfW, pmfM, gw=hat_gw, gm=hat_gm))
       pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
+      pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
+      pmf_est <- pmf_est/sum(pmf_est)
 
-#     pmf_est[1:num_Xu, 1:num_Zu] <- pmf_est[1:num_Xu, 1:num_Zu] / 2
+      PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
+      PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
+      PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE]
+      PMF_SM <- PMF_SM / (PMF_SM + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
+      PMF_PW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
+      PMF_PW <- 1 - PMF_SW
+      PMF_PM <- 1 - PMF_SM 
 
-      PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE] / apply(pmf_est[-nrow(pmf_est),,drop=FALSE],1,sum)
-      PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE] / apply(pmf_est[,-ncol(pmf_est),drop=FALSE],2,sum)
-      PMF_PW <- apply(pmf_est[-nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum) / apply(pmf_est[-nrow(pmf_est),,drop=FALSE],1,sum)
-      PMF_PM <- apply(pmf_est[-nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum) / apply(pmf_est[,-ncol(pmf_est),drop=FALSE],2,sum)
       names(PMF_SW) <- paste0("PMF_Single.W.",cnW)
       names(PMF_SM) <- paste0("PMF_Single.M.",cnM)
       names(PMF_PW) <- paste0("PMF_Partnered.W.",cnW)
@@ -255,13 +251,6 @@ rpm.bootstrap.large <- function(I, solution,
       names(LOGODDS_SW) <- paste0("LOD_Single.W.",cnW)
       names(LOGODDS_SM) <- paste0("LOD_Single.M.",cnM)
 
-      if (sampling_design %in% c("census", "stock-stock")) {
-        pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-        pmf_est <- pmf_est/sum(pmf_est)
-      }
-
-    # Return the $solution or the LOGODDS?
-    # list(est=c(th_hat[1:NumBeta],LOGODDS_SW,LOGODDS_SM,th_hat[length(th_hat)]),
       list(est=th_hat, LOGODDS_SW=LOGODDS_SW,LOGODDS_SM=LOGODDS_SM,
            Xdata=Xdata,
            Zdata=Zdata,

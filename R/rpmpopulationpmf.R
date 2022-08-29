@@ -125,16 +125,17 @@ rpmpopulationpmf <- function(object, N = 2000, num_women=NULL, num_men=NULL, pmf
             object$Sd, object$Xd, object$Zd,
             pmfWN/sum(pmfWN), pmfMN/sum(pmfMN), gw=hat_gw, gm=hat_gm))
       pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
-      if (object$sampling_design %in% c("census", "stock-stock")) { 
-        pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
-        pmf_target <- pmf_target/sum(pmf_target)
-      }
+      pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
+      pmf_target <- pmf_target/sum(pmf_target)
       out <- list(pmf=pmf_target)
 
-      out$PMF_SW <- pmf_target[-nrow(pmf_target),ncol(pmf_target)] / (apply(pmf_target[-nrow(pmf_target),-ncol(pmf_target)],1,sum)*0.5+pmf_target[-nrow(pmf_target),ncol(pmf_target)])
-      out$PMF_SM <- pmf_target[nrow(pmf_target),-ncol(pmf_target)] / (apply(pmf_target[-nrow(pmf_target),-ncol(pmf_target)],2,sum)*0.5+pmf_target[nrow(pmf_target),-ncol(pmf_target)])
-      out$PMF_PW <- apply(pmf_target[-nrow(pmf_target),-ncol(pmf_target)],1,sum)*0.5 / (apply(pmf_target[-nrow(pmf_target),-ncol(pmf_target)],1,sum)*0.5+pmf_target[-nrow(pmf_target),ncol(pmf_target)])
-      out$PMF_PM <- apply(pmf_target[-nrow(pmf_target),-ncol(pmf_target)],2,sum)*0.5 / (apply(pmf_target[-nrow(pmf_target),-ncol(pmf_target)],2,sum)*0.5+pmf_target[nrow(pmf_target),-ncol(pmf_target)])
+      PMF_SW <- pmf_target[-nrow(pmf_target), ncol(pmf_target),drop=FALSE]
+      out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_target[ -nrow(pmf_target),-ncol(pmf_target),drop=FALSE],1,sum))
+      PMF_SM <- pmf_target[ nrow(pmf_target),-ncol(pmf_target),drop=FALSE]
+      out$PMF_SM <- PMF_SM / (PMF_SM + 0.5*apply(pmf_target[ -nrow(pmf_target),-ncol(pmf_target),drop=FALSE],2,sum))
+      PMF_PW <- pmf_target[-nrow(pmf_target), ncol(pmf_target),drop=FALSE]
+      out$PMF_PW <- 1 - out$PMF_SW
+      out$PMF_PM <- 1 - out$PMF_SM 
       names(out$PMF_SW) <- names(object$PMF_SW)
       names(out$PMF_SM) <- names(object$PMF_SM)
       names(out$PMF_PW) <- names(object$PMF_PW)

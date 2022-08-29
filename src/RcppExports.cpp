@@ -11,15 +11,39 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// GSi
-arma::urowvec GSi(arma::imat U, arma::imat V);
-RcppExport SEXP _rpm_GSi(SEXP USEXP, SEXP VSEXP) {
+// GS
+arma::urowvec GS(arma::mat U, arma::mat V);
+RcppExport SEXP _rpm_GS(SEXP USEXP, SEXP VSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type U(USEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type V(VSEXP);
+    rcpp_result_gen = Rcpp::wrap(GS(U, V));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GS_TU
+arma::urowvec GS_TU(arma::mat U, arma::mat V);
+RcppExport SEXP _rpm_GS_TU(SEXP USEXP, SEXP VSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type U(USEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type V(VSEXP);
+    rcpp_result_gen = Rcpp::wrap(GS_TU(U, V));
+    return rcpp_result_gen;
+END_RCPP
+}
+// GSi_NTU
+arma::urowvec GSi_NTU(arma::imat U, arma::imat V);
+RcppExport SEXP _rpm_GSi_NTU(SEXP USEXP, SEXP VSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::imat >::type U(USEXP);
     Rcpp::traits::input_parameter< arma::imat >::type V(VSEXP);
-    rcpp_result_gen = Rcpp::wrap(GSi(U, V));
+    rcpp_result_gen = Rcpp::wrap(GSi_NTU(U, V));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -383,7 +407,9 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_rpm_GSi", (DL_FUNC) &_rpm_GSi, 2},
+    {"_rpm_GS", (DL_FUNC) &_rpm_GS, 2},
+    {"_rpm_GS_TU", (DL_FUNC) &_rpm_GS_TU, 2},
+    {"_rpm_GSi_NTU", (DL_FUNC) &_rpm_GSi_NTU, 2},
     {"_rpm_PSeqcond", (DL_FUNC) &_rpm_PSeqcond, 9},
     {"_rpm_PSgeqcond", (DL_FUNC) &_rpm_PSgeqcond, 9},
     {"_rpm_PropMax", (DL_FUNC) &_rpm_PropMax, 1},

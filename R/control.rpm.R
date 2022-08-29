@@ -48,7 +48,14 @@ utils::globalVariables(c(".control.rpm"))
 #' @param maxeval integer; Stop when the number of function evaluations exceeds maxeval. This is
 #' not a strict maximum: the number of function evaluations may exceed
 #' maxeval slightly, depending upon the algorithm. Criterion is disabled
-#' if maxeval is non-positive. Default value: 100.
+#' if maxeval is non-positive. Default value: 1000.
+#' @param bs.maxeval integer; Stop the bootstrap optimization when the number of function evaluations exceeds bs.maxeval. This is
+#' not a strict maximum: the number of function evaluations may exceed
+#' bs.maxeval slightly, depending upon the algorithm. Criterion is disabled
+#' if bs.maxeval is non-positive. Default value:50 
+#' @param bs.xtol_rel scalar; Stop the bootstrap optimization when an optimization step (or an estimate of the optimum)
+#' changes every parameter by less than bs.xtol_rel multiplied by the
+#' absolute value of the parameter. See the parameter xtol_rel for details.
 #' @param seed Seed value (integer) for the random number generator.  See
 #' \code{\link[base]{set.seed}}
 #' @param parallel.type The type of cluster to run. The typical choices are "MPI" and "PSOCK", where you
@@ -90,7 +97,7 @@ utils::globalVariables(c(".control.rpm"))
 control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level=0,
                         xtol_rel=1.0e-8, ftol_rel=1e-8, ftol_abs=1.0e-6,
                         lower.bound=-10, upper.bound=10,
-                        maxeval=1000, 
+                        maxeval=1000, bs.maxeval=50, bs.xtol_rel=1.0e-3,
                         check_derivatives=FALSE, bootstrap=TRUE, hessian=FALSE, seed = NULL,
                         parallel.type="PSOCK",
                         parallel.ncores=1,
@@ -99,7 +106,7 @@ control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level
                         logodds_single=FALSE,
                         save.data=TRUE,
                         robust.cov=FALSE,
-                        local_opts=list("algorithm"="NLOPT_LD_SLSQP","xtol_rel"=1.0e-7),
+                        local_opts=list("algorithm"="NLOPT_LD_SLSQP","xtol_rel"=1.0e-7, "maxeval"=maxeval),
                         nbootstrap=100,
                         nbootstrap.SD=20,
                         large.population.bootstrap=5000,
@@ -132,6 +139,12 @@ control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level
     }
     if (!missing(maxeval)) {
       control[["maxeval"]] <- maxeval
+    }
+    if (!missing(bs.maxeval)) {
+      control[["bs.maxeval"]] <- bs.maxeval
+    }
+    if (!missing(bs.xtol_rel)) {
+      control[["bs.xtol_rel"]] <- bs.xtol_rel
     }
     if (!missing(seed)) {
       control[["seed"]] <- seed
@@ -174,6 +187,9 @@ control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level
     }
     if (!missing(upper.bound)) {
       control[["upper.bound"]] <- upper.bound
+    }
+    if (!missing(alpha)) {
+      control[["alpha"]] <- alpha
     }
   }
   
