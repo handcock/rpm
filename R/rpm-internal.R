@@ -15,7 +15,7 @@
 #' waiting for proper documentation to be written.
 #' 
 #' @name rpm-internal
-#' @aliases GS GSi_NTU GS_TU PSeqcond PSgeqcond augpmf augpmfWM augpmfnew checkstable eqcond geqcond gloglik hloglik loglik probcounts qloglik stablearma
+#' @aliases GSi_TU GSi_NTU GS_TU GS_NTU PSeqcond PSgeqcond augpmf augpmfWM augpmfnew checkstable eqcond geqcond gloglik hloglik loglik probcounts qloglik stablearma
 #' @seealso rpm-package
 #' @keywords internal
 NULL

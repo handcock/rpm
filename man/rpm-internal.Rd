@@ -2,9 +2,10 @@
 % Please edit documentation in R/rpm-internal.R
 \name{rpm-internal}
 \alias{rpm-internal}
-\alias{GS}
+\alias{GSi_TU}
 \alias{GSi_NTU}
 \alias{GS_TU}
+\alias{GS_NTU}
 \alias{PSeqcond}
 \alias{PSgeqcond}
 \alias{augpmf}
