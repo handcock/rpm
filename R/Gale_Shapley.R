@@ -40,16 +40,18 @@ Gale_Shapley <- function(U,V,return.data.frame=FALSE, NTU=TRUE, cpp=TRUE){
  nm <- ncol(U)-1
 
  if(cpp){
+  # mu <- GS_NTU(U,V) # is the non-integer version of TU
   U <- matrixStats::rowRanks(U)
   U <- sweep(U[,-1],1,U[,1],"-")
   V <- matrixStats::rowRanks(V)
   V <- sweep(V[,-1],1,V[,1],"-")
   storage.mode(U) <- "integer"
   storage.mode(V) <- "integer"
+  # These are the integer versions
   if (NTU) {
     mu <- GSi_NTU(U,V)
   } else {
-    mu <- GS_TU(U,V)
+    mu <- GSi_TU(U,V)
   }
   rm(U,V)
  }else{

@@ -9,12 +9,15 @@ using idx_type = arma::uword;
 using namespace Rcpp;
 
 //' @export
-// [[Rcpp::export(name = "GSi_NTU")]]
-arma::urowvec GSi_NTU(arma::imat U, arma::imat V) {
+// [[Rcpp::export(name = "GSi_TU")]]
+arma::urowvec GSi_TU(arma::imat U, arma::imat V) {
   arma::urowvec m(U.n_rows);
   arma::urowvec w(U.n_cols);
   arma::irowvec cmax(U.n_cols);
+  // arma::imat W(U.n_rows,U.n_cols); // Total utility for each pairing
   int reject, nit, nmax;
+
+  U = U+V.t(); // Now the total utility of each pairing
 
   int nw = U.n_rows;
   int nm = U.n_cols;
@@ -32,9 +35,9 @@ arma::urowvec GSi_NTU(arma::imat U, arma::imat V) {
    }
    for (unsigned int i = 0u; i < static_cast<unsigned int>(nw); ++i) {
      if(U(i,m(i)) >= 0){ // best man better than single
-      if(V(m(i),i) > cmax(m(i))){ // man m(i) has higher utility for i than his current woman
+      if(U(m(i),i) > cmax(m(i))){ // man m(i) has higher utility for i than his current woman
         w(m(i)) = i; // best woman for man
-        cmax(m(i)) = V(m(i),i); // utility of best woman for man
+        cmax(m(i)) = U(m(i),i); // utility of best woman for man
       }
       m(i) = m(i) + 1;
      }else{
@@ -42,8 +45,8 @@ arma::urowvec GSi_NTU(arma::imat U, arma::imat V) {
      }
    }
    for (unsigned int j = 0u; j < static_cast<unsigned int>(nm); ++j) {
-    if(cmax(j) > -10000 && V(j,w(j)) > 0){
-       cmax(j)=V(j,w(j));
+    if(cmax(j) > -10000 && U(w(j),j) > 0){
+       cmax(j)=U(w(j),j);
        w(j) = w(j) + 1;
     }else{
        cmax(j)=0;
@@ -51,7 +54,7 @@ arma::urowvec GSi_NTU(arma::imat U, arma::imat V) {
     }
    }
    for (unsigned int i = 0u; i < static_cast<unsigned int>(nw); ++i) {
-     if(m(i) > 0 && V(m(i)-1,i) < cmax(m(i)-1)){
+     if(m(i) > 0 && U(i,m(i)-1) < cmax(m(i)-1)){
        U(i,m(i)-1) = -10000;
        reject++;
      }
@@ -65,7 +68,6 @@ arma::urowvec GSi_NTU(arma::imat U, arma::imat V) {
      m(i)=m(i)+1;
    }
   }
-//Rprintf("GSi: nit %d of nmax %d, reject %d \n",nit, nmax, reject);
   return m; 
 }
 

@@ -9,11 +9,11 @@ using idx_type = arma::uword;
 using namespace Rcpp;
 
 //' @export
-// [[Rcpp::export(name = "GS")]]
-arma::urowvec GS(arma::mat U, arma::mat V) {
+// [[Rcpp::export(name = "GS_NTU")]]
+arma::urowvec GS_NTU(arma::mat U, arma::mat V) {
   arma::urowvec m(U.n_rows);
   arma::urowvec w(U.n_cols);
-  arma::vec cmax(U.n_cols);
+  arma::rowvec cmax(U.n_cols);
   int reject, nit, nmax;
 
   int nw = U.n_rows;
@@ -66,6 +66,5 @@ arma::urowvec GS(arma::mat U, arma::mat V) {
      m(i)=m(i)+1;
    }
   }
-//Rprintf("GS: nit %d of nmax %d, reject %d \n",nit, nmax, reject);
   return m; 
 }
