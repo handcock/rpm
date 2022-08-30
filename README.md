@@ -36,8 +36,3 @@ For information on the current terms that can be used in formulas for `rpm()` se
 ```
 help("rpm-terms")
 ```
-
-<!-- badges: start -->
-[![R-CMD-check](https://github.com/eelawson/rpm/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/eelawson/rpm/actions/workflows/R-CMD-check.yaml)
-<!-- badges: end -->
-
