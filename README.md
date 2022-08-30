@@ -1,4 +1,4 @@
-# The rpm package<img src="https://github.com/eelawson/rpm/man/figures/rpm_hl.png" align="right" width="250" height="250" alt="RDS network"/>
+# The rpm package<img src="man/figures/rpm_hl.png" align="right" width="250" height="250" alt="RDS network"/>
 
 
 This is an R package to estimate revealed preferences based on observed bipartite matchings.
