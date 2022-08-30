@@ -1,6 +1,6 @@
-# The rpm package
 <img src="man/figures/rpm_hl.png" align="right" width="250" height="250" alt="RDS network"/>
 
+# The rpm package
 This is an R package to estimate revealed preferences based on observed bipartite matchings.
 
 It was originally developed by Ryan Admiraal and Mark S. Handcock.
