@@ -1,4 +1,4 @@
-# The rpm package
+# The [rpm package](man/figures/rpm_hl.png)
 
 This is an R package to estimate revealed preferences based on observed bipartite matchings.
 
