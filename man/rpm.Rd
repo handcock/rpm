@@ -71,7 +71,7 @@ additional information, including data summary statistics.}
 \value{
 \code{\link{rpm}} returns an object of class \code{\link{rpm.object}}
 that is a list consisting of the following elements: 
-\item{coef}{The maximum likelihood estimate of \eqn{\theta}, the vector of
+\item{coef}{The maximum psuedo-likelihood estimate of \eqn{\theta}, the vector of
 coefficients for the model parameters. This includes the model \eqn{\beta} and the model \eqn{\Gamma}.}
 \item{coefficients}{The bias-corrected bootstrap estimate of \eqn{\theta}, the vector of
 coefficients for the model parameters. This includes the model \eqn{\beta} and the model \eqn{\Gamma}.}
@@ -101,7 +101,7 @@ The model assumes a one-to-one stable matching using an observed set of
 matchings and a set of (possibly dyadic) covariates to 
 estimate the parameters for
 linear equations of utilities.
-It does this using an approximate likelihood based on ideas from Menzel (2015).
+It does this using a large-population approximation to the likelihood based on ideas from Menzel (2015).
 }
 \details{
 The pairings are determined by the \code{pair_id} variable in \code{Xdata}. 
@@ -119,12 +119,14 @@ number of men in the population.}
 \examples{
 library(rpm)
 data(fauxmatching)
+\donttest{
 fit <- rpm(~match("edu") + WtoM_diff("edu",3),
           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
           X_w="X_w", Z_w="Z_w",
           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
           sampled="sampled",sampling_design="stock-flow")
 summary(fit)
+}
 }
 \references{
 Menzel, Konrad (2015).

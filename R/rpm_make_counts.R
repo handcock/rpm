@@ -41,21 +41,6 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
      M_paired_to_sampled_W <- match(Xdata[paired_and_sampled_W,pair_id], Zdata[,Zid])
     }
 
-#   if(is.null(pair_w) & sampling_design != "census"){
-#   # This is the unweighted case
-#   # Construct individual weight case 
-#     a=rep(NA, length=nrow(Xdata))
-#     a[paired_and_sampled_W] <- Xdata[paired_and_sampled_W,X_w]
-#     a[paired_and_unsampled_W] <- 0
-#     Xdata[["pair_w"]]=a
-#     a=rep(NA, length=nrow(Zdata))
-#     a[paired_and_sampled_M] <- Zdata[paired_and_sampled_M,Z_w]
-#     a[paired_and_unsampled_M] <- 0
-#     Zdata[["pair_w"]]=a
-#     pair_w <- "pair_w"
-#   }
-#   if(is.null(pair_w)){ pair_w <- "pair_w" }
-    
     # get the proportion of men and women
     
     if(sampling_design != "census"){
@@ -73,8 +58,8 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
      }else{
       # for now this is stock-flow
       # Presumes individual weights
-      num_women = sum(Xdata[Xdata[,sampled],X_w])
-      num_men = sum(Zdata[Zdata[,sampled],Z_w])
+      num_women = sum(Xdata[Xdata[,sampled],X_w])+sum(Zdata[Zdata[,sampled] & !is.na(Zdata[,pair_id]),Z_w])
+      num_men   = sum(Zdata[Zdata[,sampled],Z_w])+sum(Xdata[Xdata[,sampled] & !is.na(Xdata[,pair_id]),X_w])
       n = num_women + num_men
       gw = log(num_women/n) # to ensure exp(gw)+exp(gm) = 1
       gm = log(num_men/n) # to ensure exp(gw)+exp(gm) = 1
@@ -92,26 +77,39 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
      pmfW_S = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
      subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
      pmfW_P = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
-     pmfW = pmfW_S + 0.5*pmfW_P
+     pmfW = pmfW_S + pmfW_P
      subset=Zdata[,sampled] &  is.na(Zdata[,pair_id])
      pmfM_S = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
      subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
      pmfM_P = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
-     pmfM = pmfM_S + 0.5*pmfM_P
+     pmfM = pmfM_S + pmfM_P
+#   
+     x_wts <- Xdata[,X_w] * Xdata[,sampled]
+     z_wts <- Zdata[,Z_w] * Zdata[,sampled]
     }
     if (sampling_design == "stock-flow") {
-# What should this be?
      pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
+     subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
+     pmfW = pmfW + as.numeric(stats::xtabs(Zdata$Z_w[subset] ~ factor(Xdata$Xtype[W_paired_to_sampled_M],1:num_Xu)))
+     x_wts <- Xdata[,X_w] * Xdata[,sampled]
+     x_wts[W_paired_to_sampled_M] <- Zdata[subset,Z_w]
      pmfM = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=sampled))
+     subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
+     pmfM = pmfM + as.numeric(stats::xtabs(Xdata$X_w[subset] ~ factor(Zdata$Ztype[M_paired_to_sampled_W],1:num_Zu)))
+     z_wts <- Zdata[,Z_w] * Zdata[,sampled]
+     z_wts[M_paired_to_sampled_W] <- Xdata[subset,X_w]
     }
     if (sampling_design == "census") {
      pmfW = as.numeric(stats::xtabs(~ factor(Xtype,1:num_Xu), data=Xdata))
      pmfM = as.numeric(stats::xtabs(~ factor(Ztype,1:num_Zu), data=Zdata))
+#   
+     x_wts <- rep(1, nrow(Xdata))
+     z_wts <- rep(1, nrow(Zdata))
     }
     pmfW = pmfW/sum(pmfW)
     pmfM = pmfM/sum(pmfM)
-    names(pmfW) <- cnW
-    names(pmfM) <- cnM
+    names(pmfW) <- paste(colnames(Xu)[2],Xu[,2], sep=".") 
+    names(pmfM) <- paste(colnames(Zu)[2],Zu[,2], sep=".")
 
     if(verbose){
      message(sprintf("Proportion population paired size: %f",sum(Zdata[paired_and_sampled_M,Z_w])/n))
@@ -119,8 +117,6 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
 
     if (sampling_design != "census") {
        # These indicate those sampled who are single
-       # The counts of the number of women in the population who are single
-       #     Xtype_single = as.numeric(stats::xtabs(X_w ~ factor(Xtype, 1:num_Xu), data=Xdata, subset=X_sel))  # account for missing types
        XdataS <- Xdata[Xdata[,sampled],]
        ZdataS <- Zdata[Zdata[,sampled],]
        XdataM <- Xdata[W_paired_to_sampled_M,]
@@ -146,7 +142,7 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
         num_sampled <- sum(Xdata[,sampled])+sum(Zdata[,sampled])
       }else{
         # census for now
-        num_sampled <- nrow(Xdata)+nrow(Zdata)-sum(!is.na(Zdata[,pair_id]))
+        num_sampled <- nrow(Xdata)+nrow(Zdata)
       }
     }
     Xcounts_single = as.numeric(stats::xtabs(~ factor(Xtype, 1:num_Xu), data=XdataS, subset=X_sel)) 
@@ -170,10 +166,6 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
       pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
       # The proportion of households in the population of each (X,Z) pair
 
-      # The number of pairs of people in the sample of each (X,Z) pair
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~ Xtype_paired + Ztype_paired))
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~XdataS[paired_and_sampled_W,"Xtype"]+ZdataW[,"Ztype"])) + as.numeric(stats::xtabs(~XdataM[,"Xtype"]+ZdataS[paired_and_sampled_M,"Ztype"]))
-     #counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
       counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu)))
       counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
       
@@ -186,12 +178,7 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
         counts[1+num_Xu,1:num_Zu] = Zcounts_single
       }
 
-      # The proportion of households in the population of each (X,Z) pair
-      #pmf <- pmf / sum(pmf)
-
       pmfN <- pmf*num_sampled
-  #   pmfN[1:num_Xu,1:num_Zu] <- pmfN[1:num_Xu,1:num_Zu] / 2
-  #   pmfN <- counts 
 
     } else if (sampling_design == "stock-stock") {
       
@@ -205,22 +192,12 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
       # The number of people in the population
       N <- n
 
-      # The number of people in the population of each (X,Z) pair
-#     pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(XZ_paired_w ~ Xtype_paired + Ztype_paired))
-#     pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(XdataS[,X_w]~XdataS[,"Xtype"]+ZdataW[,"Ztype"])) + as.numeric(stats::xtabs(ZdataS[,Z_w]~XdataM[,"Xtype"]+ZdataS[,"Ztype"]))
       pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-      # The proportion of households in the population of each (X,Z) pair
-      #pmf[1:num_Xu,1:num_Zu] <- 0.5*pmf[1:num_Xu,1:num_Zu] / N
       # The proportion of people in the population of each (X,Z) pair
       pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
 
       # The number of pairs of people in the sample of each (X,Z) pair
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~ Xtype_paired + Ztype_paired))
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~XdataS[,"Xtype"]+ZdataW[,"Ztype"])) + as.numeric(stats::xtabs(~XdataM[,"Xtype"]+ZdataS[,"Ztype"]))
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-      counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu)))
-#     counts[1:num_Xu,1:num_Zu] <- 0.5*counts[1:num_Xu,1:num_Zu]
-      counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
+      counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
       
       if (!is.empty(Xtype_single)) {
         pmf[1:num_Xu,1+num_Zu] = Xtype_single / N
@@ -231,15 +208,7 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
         counts[1+num_Xu,1:num_Zu] = Zcounts_single
       }
 
-      # The proportion of households in the population of each (X,Z) pair
-      # pmf <- pmf / sum(pmf)
-
-#     Next needed for microsimulate
-     #pmfN[1:num_Xu,1:num_Zu] <- pmfN[1:num_Xu,1:num_Zu] / 2
-#     Next needed for simulate
       pmfN <- counts
-    # pmfN[1:num_Xu,1:num_Zu] <- pmfN[1:num_Xu,1:num_Zu] / 2
-    # pmfN <- pmf*num_sampled
 
     } else { # assume "stock-flow"
       
@@ -254,54 +223,12 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
       # The number of people in the population
       N <- n
 
-      # The number of people in the population of each (X,Z) pair
-#     pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(XZ_paired_w ~ Xtype_paired + Ztype_paired))
-#     pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(XdataS[,X_w]~XdataS[,"Xtype"]+ZdataW[,"Ztype"])) + as.numeric(stats::xtabs(ZdataS[,Z_w]~XdataM[,"Xtype"]+ZdataS[,"Ztype"]))
-# orig      pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
       pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-      pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
-      #pmf_alt[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(ZdataW[,Z_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(XdataM[,X_w]~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-      #pmf_alt[1:num_Xu,1:num_Zu] <- 0.5*pmf_alt[1:num_Xu,1:num_Zu] / N
-      #pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] + pmf_alt[1:num_Xu,1:num_Zu]
-      
-      # The proportion of people in the population of each (X,Z) pair
-      # note that pmf[1:num_Xu,1:num_Zu] is *twice* the number of pairs so that
-      # exp(-gw)*apply(pmf,1,sum) = pmfW
-      # pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
-      # The proportion of households in the population of each (X,Z) pair
-      # pmf[1:num_Xu,1:num_Zu] <- 0.5*pmf[1:num_Xu,1:num_Zu] / N
-
-      # The number of pairs of people in the sample of each (X,Z) pair
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~ Xtype_paired + Ztype_paired))
-#     counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~XdataS[,"Xtype"]+ZdataW[,"Ztype"])) + as.numeric(stats::xtabs(~XdataM[,"Xtype"]+ZdataS[,"Ztype"]))
-#
-#     Seems twice the stock-stock case
-#     so try the same as stock-stock
-# orig  counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
+      pmf[1:num_Xu,1:num_Zu] <- 2*pmf[1:num_Xu,1:num_Zu] / N
       counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
 
-    # counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu)))
-#     counts[1:num_Xu,1:num_Zu] <- 0.5*counts[1:num_Xu,1:num_Zu]
       counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
       
-      # # account for types of pairs that are not observed
-      # # missing rows
-      # idx = which(!((1:num_Xu) %in% rownames(tmp)))
-      # if (!is.empty(idx)) {
-      #   for (ii in 1:length(idx)) {
-      #     pmf[(idx[ii]+1):(nrow(tmp)+ii),1:ncol(tmp)]= pmf[idx[ii]:(nrow(tmp)+ii-1),1:ncol(tmp)]
-      #     pmf[idx[ii],] = 0
-      #   }
-      # }
-      # # missing cols
-      # idx = which(!((1:num_Zu) %in% colnames(tmp)))
-      # if (!is.empty(idx)) {
-      #   for (ii in 1:length(idx)) {
-      #     pmf[,(idx[ii]+1):(ncol(tmp)+ii)]= pmf[,idx[ii]:(ncol(tmp)+ii-1)]
-      #     pmf[,idx[ii]] = 0
-      #   }
-      # }
-
       if (!is.empty(Xtype_single)) {
         pmf[1:num_Xu,1+num_Zu] = Xtype_single / N
         counts[1:num_Xu,1+num_Zu] = Xcounts_single
@@ -310,23 +237,17 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
         pmf[1+num_Xu,1:num_Zu] = Ztype_single / N
         counts[1+num_Xu,1:num_Zu] = Zcounts_single
       }
-      
-      if(verbose){
-        message(sprintf("Population size: %f",N))
-        message(sprintf("Matrix of counts:"))
-        print(counts)
-      }
 
-      # The proportion of households in the population of each (X,Z) pair
-      # pmf <- pmf / sum(pmf)
-
-#     Next needed for microsimulate
-      #pmfN[1:num_Xu,1:num_Zu] <- pmfN[1:num_Xu,1:num_Zu] / 2
-#     Next needed for simulate
       pmfN <- counts
-    # pmfN[1:num_Xu,1:num_Zu] <- pmfN[1:num_Xu,1:num_Zu] / 2
-    # pmfN <- pmf*num_sampled
 
+    }
+      
+    if(verbose){
+      message(sprintf("Population size: %f",N))
+      message(sprintf("Matrix of sample counts:"))
+      print(counts)
+      message(sprintf("Matrix of population counts:"))
+      print(pmfN)
     }
     if(verbose){
       message(sprintf("Population proportions of women by category:"))
@@ -338,6 +259,7 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
     }
    
     list(pmf=pmf, counts=counts, pmfW=pmfW, pmfM=pmfM, pmfN=pmfN, N=N, gw=gw, gm=gm,
-         num_women=num_women, num_men=num_men, num_sampled=num_sampled
+         num_women=num_women, num_men=num_men, num_sampled=num_sampled,
+         x_wts =x_wts, z_wts=z_wts
         )
 }

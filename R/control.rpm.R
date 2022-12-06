@@ -2,7 +2,7 @@ utils::globalVariables(c(".control.rpm"))
 #' Auxiliary for Controlling rpm
 #'
 #' Auxiliary function as user interface for fine-tuning RPM model fitting algorithm,
-#' which computes the MLE of the Revealed Preferences Model via optimization.
+#' which computes the MLPLE of the Revealed Preferences Model via optimization.
 #'
 #' This function is only used within a call to the \code{\link{rpm}}
 #' function.

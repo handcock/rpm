@@ -66,7 +66,7 @@ The model assumes a one-to-one stable matching using an observed set of
 matchings and a set of (possibly dyadic) covariates to 
 estimate the parameters for
 linear equations of utilities.
-It does this using an approximate likelihood based on ideas from Menzel (2015).
+It does this using a large-population likelihood based on ideas from Menzel (2015).
 
 The model represents the dyadic utility functions as deterministic linear utility functions of
 dyadic variables. These utility functions are functions of observed characteristics of the women
@@ -77,6 +77,7 @@ to \code{\link{rpm}}. This function simulates a population from such a model.
 \examples{
 library(rpm)
 data(fauxmatching)
+\donttest{
 fit <- rpm(~match("edu") + WtoM_diff("edu",3),
           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
           X_w="X_w", Z_w="Z_w",
@@ -87,6 +88,7 @@ num_men   = fit$N*exp(fit$gm)
 pmfW_N <- round(fit$pmfW * num_women)
 pmfM_N <- round(fit$pmfM * num_men)
 a <- microsimulate(fit, pmfW_N=pmfW_N, pmfM_N=pmfM_N)
+}
 }
 \references{
 Menzel, K. (2015).

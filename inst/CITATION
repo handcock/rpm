@@ -1,6 +1,6 @@
 # ---- BEGIN STATNET CITATION FUNCTIONS ----
-# A header function for ensuring that all the statnet packages provide consistent messaging
-statnet.cite.head <- function(pkg){
+# A header function for ensuring that all the HPMRG packages provide consistent messaging
+HPMRG.cite.head <- function(pkg){
   citHeader(
     paste("`",pkg,"` is part of the Statnet suite of packages.  ",
           "If you are using the `",pkg,"` package for research that will be published, ",
@@ -10,18 +10,18 @@ statnet.cite.head <- function(pkg){
     )
 }
 
-# A footer function for ensuring that all the statnet packages provide consistent messaging
-statnet.cite.foot <- function(pkg){
+# A footer function for ensuring that all the HPMRG packages provide consistent messaging
+HPMRG.cite.foot <- function(pkg){
   # the 'meta' variable is be provided by R's CITATION processing script
   citFooter("We have invested a lot of time and effort in creating the",
-            "Statnet suite of packages for use by other researchers.",
+            "rpm package for use by other researchers.",
             "Please cite it in all papers where it is used. The package",pkg," is made distributed under the terms of the license:",meta$License )
 }
 
 # generates a consistent bibentry citation for the software manual of the package
-statnet.cite.pkg <- function(pkg){
+HPMRG.cite.pkg <- function(pkg){
   # the 'meta' variable is provided by R's CITATION processing script
-  projhomepage <- "http://www.statnet.org"
+  projhomepage <- "https://github.com/handcock/rpm"
   # compute the list of authors  
   auts <- eval(parse(text=meta$`Authors@R`))
   auts <- auts[sapply(auts, function(aut) "aut" %in% aut$role)]
@@ -30,7 +30,7 @@ statnet.cite.pkg <- function(pkg){
   bibentry("Manual",
            author = auts,
            title = paste(meta$Package,": ", meta$Title, sep=""),
-           organization = paste("The Statnet Project (\\url{", projhomepage, "})",sep=""),
+           organization = paste("University of California, Los Angeles (\\url{", projhomepage, "})",sep=""),
            year         = substr(meta$Date,1,4),
            note         = paste("R package version ", meta$Version, sep=""),
            url          = paste("https://CRAN.R-project.org/package=",meta$Package,sep="")
@@ -39,14 +39,20 @@ statnet.cite.pkg <- function(pkg){
 # ---- END STATNET CITATION FUNCTIONS ----'
 
 # specific citation entries for the rpm package
-statnet.cite.head("rpm")
-statnet.cite.pkg("rpm")
+HPMRG.cite.head("rpm")
+HPMRG.cite.pkg("rpm")
 
 bibentry("Manual",
          title = "rpm: Modeling of Revealed Preferences Matchings",
-         author = personList(as.person("Mark S. Handcock"),
-           as.person("Ryan Admiraal")),
+         author = personList(
+           as.person("Mark S. Handcock"),
+           as.person("Ryan M. Admiraal"),
+           as.person("Fiona C. Yeung"),
+           as.person("Heide M. Jackson"),
+           as.person("Michael S. Rendall"),
+           as.person("Shuchi Goyal")
+                            ),
          organization = "University of California, Los Angeles",
-         year = 2017)
+         year = 2022)
 
-statnet.cite.foot("rpm")
+HPMRG.cite.foot("rpm")

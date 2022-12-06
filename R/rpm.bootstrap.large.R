@@ -212,7 +212,7 @@ rpm.bootstrap.large <- function(I, solution,
                  opts=control)
       )
       if(any(startsWith("Error",c(" ",out.text)))){
-        message(sprintf("Optimization for starting at the MPLE is overly constrained. Estimates may be unstable."))
+        message(sprintf("Optimization for starting at the MLPLE is overly constrained. Estimates may be unstable."))
       }
 
       th_hat <-  out.fit$solution

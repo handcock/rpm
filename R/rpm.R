@@ -7,7 +7,7 @@
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using an approximate likelihood based on ideas from Menzel (2015).
+#' It does this using a large-population approximation to the likelihood based on ideas from Menzel (2015).
 #' 
 #' @aliases rpm.object
 #' @param formula formula; an \code{\link{formula}} object, of the form \code{
@@ -57,7 +57,7 @@
 #' }
 #' @return \code{\link{rpm}} returns an object of class \code{\link{rpm.object}}
 #' that is a list consisting of the following elements: 
-#' \item{coef}{The maximum likelihood estimate of \eqn{\theta}, the vector of
+#' \item{coef}{The maximum psuedo-likelihood estimate of \eqn{\theta}, the vector of
 #' coefficients for the model parameters. This includes the model \eqn{\beta} and the model \eqn{\Gamma}.}
 #' \item{coefficients}{The bias-corrected bootstrap estimate of \eqn{\theta}, the vector of
 #' coefficients for the model parameters. This includes the model \eqn{\beta} and the model \eqn{\Gamma}.}
@@ -86,12 +86,14 @@
 #' @examples
 #' library(rpm)
 #' data(fauxmatching)
+#' \donttest{
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled",sampling_design="stock-flow")
 #' summary(fit)
+#' }
 #' @importFrom doRNG registerDoRNG
 #' @importFrom MASS cov.mcd
 #' @importFrom coda mcmc mcmc.list
@@ -190,7 +192,7 @@ rpm <- function(formula, Xdata, Zdata,
       Zdata[Zdata[,sampled] & is.na(Zdata[,Z_w]),Z_w] <- 0
     }
 
-    fit <- rpm_MPLE(formula=formula, Xdata=Xdata, Zdata=Zdata,
+    fit <- rpm_MLPLE(formula=formula, Xdata=Xdata, Zdata=Zdata,
                     Xid=Xid, Zid=Zid, pair_id=pair_id,
                     X_w=X_w, Z_w=Z_w, pair_w=pair_w,
                     sampled=sampled,

@@ -7,11 +7,7 @@
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using an approximate likelihood based on ideas from Menzel (2015).
-#' The "rpm" packages is part of
-#' the "statnet" suite of packages for the analysis of social network 
-#' data.  For a list of functions type:
-#' help(package='rpm')
+#' It does this using a large-population likelihood based on ideas from Menzel (2015).
 #' 
 #' For a complete list of the functions, use \code{library(help="rpm")} or
 #' read the rest of the manual.
@@ -19,8 +15,8 @@
 #' When publishing results obtained using this package the original authors are
 #' to be cited as:
 #' 
-#' Mark S. Handcock, Ryan Admiraal, Fiona C. Yeung and Shuchi Goyal (2020) \pkg{rpm}: Modeling of Revealed Preferences Matchings
-#' R package, Los Angeles, CA.  Version 0.60, \url{https://statnet.org}.
+#' Mark S. Handcock, Ryan M. Admiraal, Fiona C. Yeung, Heide M. Jackson, Michael S. Rendall and Shuchi Goyal (2022) \pkg{rpm}: Modeling of Revealed Preferences Matchings
+#' R package, Los Angeles, CA.  Version 0.70, \url{https://github.com/handcock/rpm}.
 #' 
 #' All programs derived from this package must cite it. For complete citation
 #' information, use\cr \code{citation(package="rpm")}.
@@ -52,12 +48,14 @@
 #' @examples
 #' library(rpm)
 #' data(fauxmatching)
+#' \donttest{
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled",sampling_design="stock-flow")
 #' summary(fit)
+#' }
 #' # For details on how to construct data for input:
 #' help(fauxmatching)
 #' # For information on the current terms that can be used in formulas:

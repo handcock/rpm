@@ -7,7 +7,7 @@
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using an approximate likelihood based on ideas from Menzel (2015).
+#' It does this using a large-population likelihood based on ideas from Menzel (2015).
 #' 
 #' The model represents the dyadic utility functions as deterministic linear utility functions of
 #' dyadic variables. These utility functions are functions of observed characteristics of the women
@@ -103,10 +103,16 @@
 #'    unique values of the \code{attr} attribute. Each of these statistics
 #'    indicates if the women's has that attribute.
 #'   }
+#'  \item{\code{homophily(attr)}
+#'    }{\emph{Uniform homophily effect:}
+#'    The \code{attr} argument specifies a categorical attribute
+#'    This term adds one statistic to the model
+#'    indicating that the dyad matches on that attribute.
+#'   }
 #'  \item{\code{match(attr, diff=FALSE, collapse=NULL)}
 #'    }{\emph{Attribute-based homophily effect:}
 #'    The \code{attr} argument specifies a categorical attribute
-#'    This term adds one statistic to the model
+#'    This term adds one statistic to the model for each categorical level,
 #'    unless \code{diff} is set to \code{TRUE}, in which case the term adds multiple 
 #'    statistics to the model, one for each of (a subset of) the unique values of the \code{attr}
 #'    attribute. 
@@ -147,10 +153,12 @@
 #' @examples
 #' library(rpm)
 #' data(fauxmatching)
+#' \donttest{
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled")
 #' summary(fit)
+#' }
 NULL

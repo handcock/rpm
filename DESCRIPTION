@@ -1,19 +1,21 @@
 Package: rpm
 Type: Package
 Title: Modeling of Revealed Preferences Matchings
-Version: 0.60
-Date: 2022-04-11
-Authors@R: c(person("Mark S.", "Handcock", role=c("aut","cre"), email="handcock@stat.ucla.edu"),
-        person("Ryan Admiraal", "Admiraal", role=c("aut"), email="ryan.admiraal@vuw.ac.nz"),
-        person("Fiona C. Yeung", "Yeung", role=c("aut"), email="fiona.c.yeung@gmail.com"),
-        person("Shuchi Goyal", "Goyal", role=c("aut"), email="sgoyal25@g.ucla.edu"))
-Maintainer: Mark S. Handcock <handcock@stat.ucla.edu>
-Description: Statistical estimation of revealed preference models from data collected on bipartite matchings.
+Version: 0.7
+Date: 2022-12-05
+Authors@R: c(
+        person("Mark S.", "Handcock", role=c("aut","cre"), email="handcock@stat.ucla.edu", comment=c(ORCID="0000-0002-9985-2785")),
+        person("Ryan M. ", "Admiraal", role=c("ctb"), email="ryan.admiraal@vuw.ac.nz"),
+        person("Fiona C.", "Yeung", role=c("ctb"), email="fiona.c.yeung@gmail.com"),
+        person("Heide M.", "Jackson", role=c("ctb"), email="heidej@umd.edu"),
+        person("Michael S.", "Rendall", role=c("ctb"), email="mrendall@umd.edu"),
+        person("Shuchi", "Goyal", role=c("ctb"), email="sgoyal25@ucla.edu"))
+Description: Statistical estimation of revealed preference models from data collected on bipartite matchings. The models are for matchings within a bipartite population where individuals have utility for people based on known and unknown characteristics. People can form a partnership or remain unpartnered. The model represents both the availability of potential partners of different types and preferences of individuals for such people. The software estimates preference parameters based on sample survey data on partnerships and population composition. The simulation of matchings and goodness-of-fit are considered.  See Goyal, Handcock, Jackson, Rendall and Yeung (2022) <doi:10.1080/10618600.2022.2116444>.
 License: GPL-3 + file LICENSE
 URL: https://handcock.github.io
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
-    R (>= 3.6.0),
+    R (>= 4.0.0),
     abind,
     future,
     doRNG,
@@ -31,4 +33,4 @@ Imports:
     doFuture,
     foreach
 Encoding: UTF-8
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2

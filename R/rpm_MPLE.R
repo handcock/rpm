@@ -1,16 +1,15 @@
 #' Fit a Revealed Preference Matchings Model
 #' 
-#' \code{\link{rpm_MPLE}} estimates the parameters of a revealed preference model
+#' \code{\link{rpm_MLPLE}} estimates the parameters of a revealed preference model
 #' for men and women of certain
 #' characteristics (or shared characteristics) of people of the opposite sex.
 #' The model assumes a one-to-one stable matching using an observed set of
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using an approximate likelihood based on ideas from Menzel (2015).
+#' It does this using a large-population approximation to the likelihood based on ideas from Menzel (2015).
 #' 
-#' It is usually called via the \code{\link{rpm_MPLE}} function, which allows alternative estimators
-#' including Bayesian estimation. 
+#' It is usually called via the \code{\link{rpm}} function.
 #' @param formula formula; an \code{\link{formula}} object, of the form \code{
 #' ~ <model terms>}. For the details on the possible \code{<model terms>}, see
 #' \code{\link{rpm-terms}}.
@@ -84,15 +83,16 @@
 #' @examples
 #' library(rpm)
 #' data(fauxmatching)
+#' \donttest{
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled",sampling_design="stock-flow")
 #' summary(fit)
+#' }
 #' @importFrom MASS cov.mcd
-#' @export rpm
-rpm_MPLE <- function(formula, Xdata, Zdata,
+rpm_MLPLE <- function(formula, Xdata, Zdata,
     Xid=NULL, Zid=NULL, pair_id=NULL,
     X_w=NULL, Z_w=NULL, pair_w=NULL,
     sampled=NULL,
@@ -193,7 +193,7 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
       print(a[order(a[,pair_id]),])
       message("Please correct this before reruning.")
     }
-    if(!is.empty(W_duplicated_pair_id) | !is.empty(W_duplicated_pair_id) | !all(W_paired_to_M) | !all(M_paired_to_W)){
+    if(!is.empty(W_duplicated_pair_id) | !is.empty(M_duplicated_pair_id) | !all(W_paired_to_M) | !all(M_paired_to_W)){
       stop()
     }
 
@@ -543,9 +543,9 @@ rpm_MPLE <- function(formula, Xdata, Zdata,
     th_hat <- out.list[[which.min(lliks)]]$solution
 
     if(inherits(out,"try-error") || any(is.na(out$solution))){
-      message("MLE failed; restarting at different starting values.\n")
+      message("MLPLE failed; restarting at different starting values.\n")
       if(inherits(out,"try-error")){
-         message("MLE still contains NAs.\n")
+         message("MLPLE still contains NAs.\n")
       }
     }
   

@@ -10,7 +10,7 @@
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using an approximate likelihood based on ideas from Menzel (2015).
+#' It does this using a large-population likelihood based on ideas from Menzel (2015).
 #' 
 #' The model represents the dyadic utility functions as deterministic linear utility functions of
 #' dyadic variables. These utility functions are functions of observed characteristics of the women
@@ -63,12 +63,14 @@
 #' @examples
 #' library(rpm)
 #' data(fauxmatching)
+#' \donttest{
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled")
 #' a <- gof(fit)
+#' }
 #' @references Menzel, K. (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
 #' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
@@ -110,7 +112,6 @@ gof.rpm <- function(object, ...,
   out$observed_pmf <- object$pmf
   
   out$compare_sim <- "sim-est"
-  N <- object$N
 
   # Observed Hellinger divergence
   compute_hellinger <- function(observed, expected) {
@@ -126,7 +127,7 @@ gof.rpm <- function(object, ...,
     csc[nrow(observed),ncol(observed)] = 0
     return(csc)
   }
-  out$obs_chi_sq_cell <- compute_chi_sq(N,observed_pmf,model_pmf)
+  out$obs_chi_sq_cell <- compute_chi_sq(object$N,observed_pmf,model_pmf)
   out$obs_chi_sq <- sum(out$obs_chi_sq_cell)
   
   # Observed KL divergence
