@@ -215,6 +215,11 @@ rpm.bootstrap.large <- function(I, solution,
         message(sprintf("Optimization for starting at the MLPLE is overly constrained. Estimates may be unstable."))
       }
 
+      # Remove the large associated environments
+      out.fit$nloptr_environment<- NULL
+      out.fit$eval_g_eq <- NULL
+      out.fit$eval_f  <- NULL
+
       th_hat <-  out.fit$solution
       hat_gw <- th_hat[NumBeta+NumGammaW+NumGammaM+1]
       hat_gm <- log(1-exp(hat_gw))

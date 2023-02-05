@@ -447,6 +447,10 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       if(any(startsWith("Error",c(" ",out.text)))){
         message(sprintf("Optimization for starting value %d is overly constrained. Estimates may be unstable.",i))
       }
+      # Remove the large associated environments
+      out.list[[i]]$nloptr_environment<- NULL
+      out.list[[i]]$eval_g_eq <- NULL
+      out.list[[i]]$eval_f  <- NULL
       names(out.list[[i]]$solution) <- names(init_theta[[1]])
       if(i==1){
        init_theta[[length(init_theta)]] <- out.list[[1]]$solution 
@@ -576,8 +580,10 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
 
     PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
+   #out$PMF_SW <- PMF_SW / (PMF_SW + apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
     PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE]
     out$PMF_SM <- PMF_SM / (PMF_SM + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
+   #out$PMF_SM <- PMF_SM / (PMF_SM + apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
     PMF_PW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_PW <- 1 - out$PMF_SW
     out$PMF_PM <- 1 - out$PMF_SM 
@@ -659,13 +665,13 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
 
      if(control$ncores > 1){
       doFuture::registerDoFuture()
-      cl <- parallel::makeCluster(control$ncores, type=control$parallel.type)
-      future::plan(cluster, workers = cl)
+     #cl <- parallel::makeCluster(control$ncores, type=control$parallel.type)
+     #future::plan(cluster, workers = cl)
       if(Sys.info()[["sysname"]] == "Windows"){
-        future::plan(multisession)  ## on MS Windows
+        future::plan(multisession, workers=control$ncores)  ## on MS Windows
       }else{
         if(control$parallel.type!="MPI"){
-          future::plan(multisession)     ## on Linux, Solaris, and macOS
+          future::plan(multisession, workers=control$ncores)     ## on Linux, Solaris, and macOS
         }
       }
       if (!is.null(control$seed)) {
@@ -804,7 +810,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
         out.boot.LOGODDS[i,NumGammaW+(1:NumGammaM)] <- out.boot_i$LOGODDS_SM
       }
     }
-    if(control$ncores > 1){ parallel::stopCluster(cl) }
+   #if(control$ncores > 1){ parallel::stopCluster(cl) }
 
 #  bias-correct these
     coef.boot.bias <- apply(out.boot, 2, stats::median, na.rm=TRUE) - th_hat

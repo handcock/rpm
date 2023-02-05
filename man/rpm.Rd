@@ -101,7 +101,7 @@ The model assumes a one-to-one stable matching using an observed set of
 matchings and a set of (possibly dyadic) covariates to 
 estimate the parameters for
 linear equations of utilities.
-It does this using a large-population approximation to the likelihood based on ideas from Menzel (2015).
+It does this using an large-population likelihood based on ideas from Menzel (2015) and Goyal et al (2023).
 }
 \details{
 The pairings are determined by the \code{pair_id} variable in \code{Xdata}. 
@@ -132,6 +132,9 @@ summary(fit)
 Menzel, Konrad (2015).
 \emph{Large Matching Markets as Two-Sided Demand Systems}
 Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
+Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+\emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+\emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07}
 }
 \seealso{
 control.rpm, summary.rpm, print.rpm

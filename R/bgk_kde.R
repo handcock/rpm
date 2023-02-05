@@ -1,5 +1,6 @@
 #' @keywords internal
-bgk_kde <- function(data,n,MIN,MAX,smooth=4){
+#' @importFrom stats xtabs
+bgk_kde <- function(data,n,MIN,MAX,smooth=4,weights=rep(1,length(data))){
 #       State-of-the-art gaussian kernel density estimator for one-dimensional data;
 #       The estimator does not use the commonly employed 'gaussian rule of thumb'.
 #       As a result it outperforms many plug-in methods on multimodal densities 
@@ -44,11 +45,12 @@ if (nargin<4)
   if(missing(MAX)){MAX=maximum+Range/10};
 }
 # set up the grid over which the density estimate is computed;
-R=MAX-MIN; dx=R/n; xmesh=MIN+seq(from=0,to=R,by=dx); N=length(data); 
+R=MAX-MIN; dx=R/n; xmesh=MIN+seq(from=0,to=R,by=dx); N=sum(weights); 
 # if data has repeated observations use the N below
 # N=length(as.numeric(names(table(data))));
 # bin the data uniformly using the grid defined above;
-w=hist(x=data,breaks=xmesh,plot=FALSE);initial_data=(w$counts)/N;
+#w=hist(x=data,breaks=xmesh,plot=FALSE);initial_data=(w$counts)/N;
+initial_data=as.numeric(stats::xtabs(weights ~ cut(data, xmesh)))/N;
 initial_data=initial_data/sum(initial_data);
 
 dct1d <- function(data){
