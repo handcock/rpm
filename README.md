@@ -13,8 +13,8 @@ individuals for such people.
 
 We develop a large-population likelihood framework to estimate
 preference parameters based on sample survey data on partnerships and population
-composition. The framework was originally due to Menzel (2015).
-Based on simulation studies conducted in See Goyal, Handcock, Jackson, Rendall and Yeung (2022),
+composition. The framework was originally due to Dagsvik (2000) and Menzel (2015).
+Based on simulation studies conducted in Goyal, Handcock, Jackson, Rendall and Yeung (2022),
 for realistic population sizes, the model recovers preference parameters that are
 invariant under different population availabilities.  The software uses bootstrap methods to bias
 correct parameter estimates for small population sizes and produce conﬁdence intervals 
@@ -71,4 +71,5 @@ See the following papers for more information and examples:
 #### Statistical Methodology
 
 * Goyal, Shuchi, Handcock, Mark S., Jackson, Heide M., Rendall, Michael S., Yeung, Fiona C. (2022) [A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation](https://doi.org/10.1214/14-ejs923), *Journal of the Royal Statistical Society*, A.
+* Dagsvik, John K. (2000) [Aggregation in Matching Markets](https://doi.org/10.1111/1468-2354.00054) JSTOR: https://www.jstor.org/stable/2648822, *International Economic review*, Vol. 41, 27-57.
 * Menzel, Konrad (2015) [Large Matching Markets as Two-Sided Demand Systems](https://doi.org/10.3982/ECTA12299), *Econometrica*, Vol. 83, No. 3 (May, 2015), 897-941.
