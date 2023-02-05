@@ -64,7 +64,7 @@ help("rpm-terms")
 
 # Software bugs and questions
 
-Please use the GitHub repository to report bugs or request features: https://github.com/handcock/rpm
+Please use the GitHub repository to report bugs or request features: https://github.com/handcock/rpm/issues
 
 See the following papers for more information and examples:
 
