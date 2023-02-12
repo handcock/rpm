@@ -2,7 +2,7 @@
 # A header function for ensuring that all the HPMRG packages provide consistent messaging
 HPMRG.cite.head <- function(pkg){
   citHeader(
-    paste("`",pkg,"` is part of the Statnet suite of packages.  ",
+    paste(#"`",pkg,"` is part of the Statnet suite of packages.  ",
           "If you are using the `",pkg,"` package for research that will be published, ",
           "we request that you acknowledge this by citing the following.\n",
           'For BibTeX format, use toBibtex(citation("',pkg,'")).',
@@ -13,9 +13,9 @@ HPMRG.cite.head <- function(pkg){
 # A footer function for ensuring that all the HPMRG packages provide consistent messaging
 HPMRG.cite.foot <- function(pkg){
   # the 'meta' variable is be provided by R's CITATION processing script
-  citFooter("We have invested a lot of time and effort in creating the",
-            "rpm package for use by other researchers.",
-            "Please cite it in all papers where it is used. The package",pkg," is made distributed under the terms of the license:",meta$License )
+  citFooter("We have invested a lot of time and effort in creating the `",
+            pkg, "` package for use by other researchers.",
+            "Please cite it in all papers where it is used. The package `",pkg,"` is made distributed under the terms of the license:",meta$License )
 }
 
 # generates a consistent bibentry citation for the software manual of the package
@@ -28,8 +28,26 @@ HPMRG.cite.pkg <- function(pkg){
   # create a citation entry for a "software manual" for this version of the software
   # it will be appended with any specific articles defineded inthe package citation file
   bibentry("Manual",
-           author = auts,
-           title = paste(meta$Package,": ", meta$Title, sep=""),
+         title = paste(meta$Package,": ", meta$Title, sep=""),
+         author = structure(list(
+          list(given = "Mark S.", family = "Handcock", role = c("aut", "cre"), email = "handcock@stat.ucla.edu",
+               comment = c(ORCID = "0000-0002-9985-2785")),
+          list(given = "Ryan M.", family= "Admiraal", role=c("ctb"), email="ryan.admiraal@vuw.ac.nz", comment = NULL),
+          list(given = "Fiona C.", family= "Yeung", role=c("ctb"), email="fiona.c.yeung@gmail.com", comment = NULL),
+          list(given = "Heide M.", family= "Jackson", role=c("ctb"), email="heidej@umd.edu", comment = NULL),
+          list(given = "Michael S.", family= "Rendall", role=c("ctb"), email="mrendall@umd.edu", comment = NULL),
+          list(given = "Shuchi", family= "Goyal", role=c("ctb"), email="sgoyal25@ucla.edu", comment = NULL)
+                                ), class="person"),
+         year         = substr(meta$Date,1,4),
+         note         = paste("R package version ", meta$Version, sep=""),
+         address      = "Los Angeles, CA",
+         url          = "https://CRAN.R-project.org/package=RDS",
+         textVersion = 
+         paste("Mark S. Handcock, Ryan M. Admiraal, Fiona C. Yeung, Heide M. Jackson, Michael S. Rendall, Shuchi Goyal (2023)", 
+               paste(meta$Package,": ", meta$Title, sep=""),
+               ", Version ", meta$Version, ". Project home page at https://github.com/handcock/rpm",
+               ",", " URL https://CRAN.R-project.org/package=rpm.",
+               sep=""),
            organization = paste("University of California, Los Angeles (\\url{", projhomepage, "})",sep=""),
            year         = substr(meta$Date,1,4),
            note         = paste("R package version ", meta$Version, sep=""),
@@ -41,18 +59,4 @@ HPMRG.cite.pkg <- function(pkg){
 # specific citation entries for the rpm package
 HPMRG.cite.head("rpm")
 HPMRG.cite.pkg("rpm")
-
-bibentry("Manual",
-         title = "rpm: Modeling of Revealed Preferences Matchings",
-         author = personList(
-           as.person("Mark S. Handcock"),
-           as.person("Ryan M. Admiraal"),
-           as.person("Fiona C. Yeung"),
-           as.person("Heide M. Jackson"),
-           as.person("Michael S. Rendall"),
-           as.person("Shuchi Goyal")
-                            ),
-         organization = "University of California, Los Angeles",
-         year = 2022)
-
 HPMRG.cite.foot("rpm")
