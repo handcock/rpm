@@ -92,19 +92,19 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
 
       rescale <- FALSE
       # The number of people in the population
-      if(sampling_design == "stock-stock"){
+      if(object$sampling_design == "stock-stock"){
         N_w = sum(object$Xdata[object$Xdata[,object$sampled] & is.na(object$Xdata[,object$pair_id]),object$X_w])
         N_w = N_w + sum(object$Zdata[object$Zdata[,object$sampled] & !is.na(object$Zdata[,object$pair_id]),object$Z_w]) # The population size
         N_m = sum(object$Zdata[object$Zdata[,object$sampled] & is.na(object$Zdata[,object$pair_id]),object$Z_w])
         N_m = N_m + sum(object$Xdata[object$Xdata[,object$sampled] & !is.na(object$Xdata[,object$pair_id]),object$X_w]) # The population size
       }
-      if(sampling_design == "stock-flow"){
+      if(object$sampling_design == "stock-flow"){
         N_w = sum(object$Xdata[object$Xdata[,object$sampled],object$X_w])
         N_w = N_w + sum(object$Zdata[object$Zdata[,object$sampled] & !is.na(object$Zdata[,object$pair_id]),object$Z_w])
         N_m = sum(object$Zdata[object$Zdata[,object$sampled],object$Z_w])
         N_m = N_m + sum(object$Xdata[object$Xdata[,object$sampled] & !is.na(object$Xdata[,object$pair_id]),object$X_w])
       }
-      if(sampling_design == "census"){
+      if(object$sampling_design == "census"){
         N_w = nrow(object$Xdata)
         N_m = nrow(object$Zdata)
         if(is.null(object$sampled)){
@@ -197,12 +197,12 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
 
       if(control$ncores > 1){
         doFuture::registerDoFuture()
-        cl <- parallel::makeCluster(control$ncores)
-        future::plan(cluster, workers = cl)
+       #cl <- parallel::makeCluster(control$ncores)
+       #future::plan(cluster, workers = cl)
         if(Sys.info()[["sysname"]] == "Windows"){
-          future::plan(multisession)  ## on MS Windows
+          future::plan(multisession, workers=control$ncores)  ## on MS Windows
         }else{
-          future::plan(multisession)     ## on Linux, Solaris, and macOS
+          future::plan(multisession, workers=control$ncores)     ## on Linux, Solaris, and macOS
         }
         ### initialize parallel random number streams
         if (!is.null(control$seed)) {
@@ -309,7 +309,7 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
          object$Xdata[,object$X_w] <- X_w_new
          object$Zdata[,object$Z_w] <- Z_w_new
         }
-        if(sampling_design %in% c("stock-stock", "census")){
+        if(object$sampling_design %in% c("stock-stock", "census")){
           paired_W <- !is.na(object$Xdata[,object$pair_id]) 
           paired_M <- !is.na(object$Zdata[,object$pair_id])
           M_paired_to_sampled_W <- match(object$Xdata[paired_W,object$pair_id], object$Zdata[,object$Zid])
@@ -602,7 +602,7 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
             ) %dorng% {
             rpm.simulate.large.population.worker(pmf_target, object, X_w_rel, Z_w_rel, num_sampled, num_women, num_men,numX,numZ)
             }
-          if(exists("cl")) parallel::stopCluster(cl)
+         #if(exists("cl")) parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){
@@ -669,7 +669,7 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
         Jm <- sqrt(num_women)
 
         rpm.simulate.small.population.worker <- function(i, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms, Xid, Zid, Xu, Zu,
-            pair_id, sampling_design){
+            X_w,Z_w,pair_id, sampling_design){
           eta  <- -log(-log(matrix(stats::runif(num_women * num_men), nrow=num_women)))
           zeta <- -log(-log(matrix(stats::runif(num_women * num_men), nrow=num_men)))
   
@@ -686,12 +686,13 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           # uses Menzel's GS which allows remaining single
           ############## temp to match one-to-one#################
           mu = Gale_Shapley(U, V, return.data.frame=TRUE)
-          mu=data.frame(mu, type=c(Ws, Ms))
+          mu=data.frame(mu, Xtype=c(Ws, Ms))
           colnames(mu)[c(1,3)] <- c(Xid, pair_id)
           Xdata <- subset(mu, gender=="F")
           Xdata <- data.frame(Xdata,as.data.frame(Xu[Ws,-1,drop=FALSE]))
           Zdata <- subset(mu, gender=="M")
           colnames(Zdata)[match(Xid,colnames(Zdata))] <- Zid
+          colnames(Zdata)[match("Xtype",colnames(Zdata))] <- "Ztype"
           Zdata <- data.frame(Zdata,as.data.frame(Zu[Ms,-1,drop=FALSE]))
 
           X_w_rel <- rep(1,nrow(Xdata))
@@ -753,10 +754,12 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           Xdata <- rbind(XdataP, XdataS)
           Zdata <- rbind(ZdataP, ZdataS)
   
-          Xdata$X_w <- rep(0, nrow(Xdata))
-          Xdata$X_w[Xdata$sampled] <- num_women/sum(Xdata$sampled)
-          Zdata$Z_w <- rep(0, nrow(Zdata))
-          Zdata$Z_w[Zdata$sampled] <- num_men/sum(Zdata$sampled)
+          a <- rep(0, nrow(Xdata))
+          a[Xdata$sampled] <- num_women/sum(Xdata$sampled)
+          Xdata[[X_w]] <- a
+          a <- rep(0, nrow(Zdata))
+          a[Zdata$sampled] <- num_men/sum(Zdata$sampled)
+          Zdata[[Z_w]] <- a
 
           # random permute to add randomness
           list(Xdata=Xdata[sample.int(nrow(Xdata)),],
@@ -767,13 +770,13 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           out.list <-
             foreach::foreach (i=1:nsim, .packages=c('rpm')
             ) %dorng% {
-            rpm.simulate.small.population.worker(i, length(Ws), length(Ms), Jw, Jm, U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$Xu, object$Zu, object$pair_id, sampling_design)
+            rpm.simulate.small.population.worker(i, length(Ws), length(Ms), Jw, Jm, U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$Xu,  object$Zu, object$X_w, object$Z_w, object$pair_id, sampling_design)
             }
-          if(exists("cl")) parallel::stopCluster(cl)
+         #if(exists("cl")) parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){
-            out.list[[i]] <- rpm.simulate.small.population.worker(i, length(Ws), length(Ms), Jw, Jm, U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$Xu, object$Zu, object$pair_id, sampling_design)
+            out.list[[i]] <- rpm.simulate.small.population.worker(i, length(Ws), length(Ms), Jw, Jm, U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$Xu, object$Zu, object$X_w, object$Z_w, object$pair_id, sampling_design)
           }
         }
       }
