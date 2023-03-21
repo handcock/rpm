@@ -45,8 +45,8 @@
 #' @keywords models
 #' @examples
 #' library(rpm)
-#' data(fauxmatching)
 #' \donttest{
+#' data(fauxmatching)
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
@@ -57,13 +57,21 @@
 #' pmfW_N <- round(fit$pmfW * num_women)
 #' pmfM_N <- round(fit$pmfM * num_men)
 #' a <- microsimulate(fit, pmfW_N=pmfW_N, pmfM_N=pmfM_N)
-#' }
-#' @references Menzel, K. (2015).
+#'}
+#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+#' \emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+#' Menzel, K. (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
 #' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 #' @export
 microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL, large.population=TRUE, bootstrap=FALSE, control=control.rpm(), counts.only=FALSE, verbose = FALSE) 
 {
+
+      if(is.null(object$Xdata) | is.null(object$Zdata)){
+        stop('The passed rpm fitted object has a null Xdata or Zdata component. Did you specify "save.data=FALSE" in the fit?')
+      }
+
       if(!is.null(seed)) set.seed(seed)
 
       if(missing(pmfW_N)){
@@ -75,11 +83,11 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
 
       if(any(abs(round(pmfW_N)-pmfW_N)>0.0000001)){
         warning("pmfW_N should all be natural numbers. They have been rounded to ensure this.")
-        pmfM_N <- round(pmfM_N)
+        pmfW_N <- round(pmfW_N)
       }
       if(any(abs(round(pmfM_N)-pmfM_N)>0.0000001)){
         warning("pmfM_N should all be natural numbers. They have been rounded to ensure this.")
-        pmfW_N <- round(pmfW_N)
+        pmfM_N <- round(pmfM_N)
       }
 
       num_women = round(sum(pmfW_N))
@@ -104,12 +112,12 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
 
       if(control$ncores > 1){
         doFuture::registerDoFuture()
-        cl <- parallel::makeCluster(control$ncores)
-        future::plan("cluster", workers = cl)
+       #cl <- parallel::makeCluster(control$ncores)
+       #future::plan("cluster", workers = cl)
         if(Sys.info()[["sysname"]] == "Windows"){
-          future::plan("multisession")  ## on MS Windows
+          future::plan("multisession", workers=control$ncores)  ## on MS Windows
         }else{
-          future::plan("multisession")  ## on Linux, Solaris, and macOS
+          future::plan("multisession", workers=control$ncores)     ## on Linux, Solaris, and macOS
         }
         ### initialize parallel random number streams
         if (!is.null(seed) | !is.null(control$seed)) {
@@ -125,13 +133,11 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         # bootstrap
         if(rescale){
           if(!bootstrap){
-            hat_gw <- object$coefficients[object$NumBeta+object$NumGammaW+object$NumGammaM+1]
-            hat_gm <- log(1-exp(hat_gw))
             pmf_target <- exp(augpmfnew(object$coefficients[1:object$NumBeta],
                 GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
                 GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                 object$Sd, object$Xd, object$Zd,
-                pmfW, pmfM, gw=hat_gw, gm=hat_gm))
+                pmfW, pmfM, gw=gw, gm=gm))
             pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
             pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
             pmf_target <- pmf_target/sum(pmf_target)
@@ -143,7 +149,14 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           }
         }else{
           if(!bootstrap){
-            pmf_target <- object$pmf_est
+            pmf_target <- exp(augpmfnew(object$coefficients[1:object$NumBeta],
+                GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
+                GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
+                object$Sd, object$Xd, object$Zd,
+                pmfW, pmfM, gw=gw, gm=gm))
+            pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
+            pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
+            pmf_target <- pmf_target/sum(pmf_target)
           }else{
             pmf_target <- object$pmf
           }
@@ -292,13 +305,11 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         rpm.simulate.large.population.worker <- function(object, coefficients, N, X_w_rel, Z_w_rel, pmfW_N, pmfM_N, pmfW, pmfM, gm, gw, numX, numZ, bootstrap){
 
           if(!bootstrap){
-            hat_gw <- coefficients[object$NumBeta+object$NumGammaW+object$NumGammaM+1]
-            hat_gm <- log(1-exp(hat_gw))
             pmf_target_boot <- exp(augpmfnew(coefficients[1:object$NumBeta],
                 GammaW=coefficients[object$NumBeta+(1:object$NumGammaW)],
                 GammaM=coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                 object$Sd, object$Xd, object$Zd,
-                pmfW, pmfM, gw=hat_gw, gm=hat_gm))
+                pmfW, pmfM, gw=gw, gm=gm))
             pmf_target_boot[nrow(pmf_target_boot),ncol(pmf_target_boot)] <- 0
           }else{
             pmf_target_boot <- augpmfWM(
@@ -325,7 +336,6 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           }
 #         M-H
           cts.orig <- cts
-#ptm <- proc.time()
           num_MH <- 1000*numX*numZ
           Z <- matrix(0,nrow=numX+1,ncol=numZ+1)
           pX1 <- sample(1:numX,size=num_MH,replace=TRUE)
@@ -416,6 +426,7 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
 #        duplicated cases by creating unique IDs for them (and their partners).
           Idups <- Is[duplicated(Is)]
           Iunique <- unique(Idups)
+#         Iunique <- I[!duplicated(I)]
           for( l in Iunique ){
            a <- XdataSingle[,object$Xid] == l
            if(any(a)){
@@ -512,13 +523,12 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
             boot.coefficients <- object$boot.coef[
               sample.int(nrow(object$boot.coef), size=nsim, replace=FALSE),,drop=FALSE]
           }else{
-            warning("The number of boostrap samples in the passed fit is less than the requested 'nsim'. The effective size of 'nsim' is capped at the number of bootstrap samples. To increase this, refit the 'rpm' model with the 'control.rpm(nbootstrap=nsim)' and rerun this command.")
+            warning("The number of bootstrap samples in the passed fit is less than the requested 'nsim'. The effective size of 'nsim' is capped at the number of bootstrap samples. To increase this, refit the 'rpm' model with the 'control.rpm(nbootstrap=nsim)' and rerun this command.")
             boot.coefficients <- rbind(object$boot.coef,
              object$boot.coef[sample.int(nrow(object$boot.coef),
                               size=nsim-nrow(object$boot.coef), replace=TRUE),] )
           }
         }
-   #    boot.coefficients <- matrix(rep(object$coefficients, nsim),byrow=TRUE,nrow=nsim)
         if(control$ncores > 1 & nsim > 1){
           if(verbose) message(sprintf("Starting parallel simulation using %d cores.",control$ncores))
           out.list <-
@@ -526,7 +536,6 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
            ) %dorng% {
            rpm.simulate.large.population.worker(object, boot.coefficients[i,], N, X_w_rel, Z_w_rel, pmfW_N, pmfM_N, pmfW, pmfM, gm, gw, numX, numZ, bootstrap)
            }
-          parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){
@@ -589,7 +598,6 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         }
   
         # adjust for outside option (remain single)
-  
         Jw <- sqrt(num_men)
         Jm <- sqrt(num_women)
 
@@ -610,13 +618,14 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           # uses Menzel's GS which allows remaining single
           ############## temp to match one-to-one#################
           mu = Gale_Shapley(U, V, return.data.frame=TRUE)
-          mu=data.frame(mu, type=c(Ws, Ms), sampled=rep(TRUE,nrow(mu)))
+          mu=data.frame(mu, Xtype=c(Ws, Ms), sampled=rep(TRUE,nrow(mu)))
           colnames(mu)[c(1,3)] <- c(object$Xid, object$pair_id)
           Xdata <- subset(mu, gender=="F")
           Xdata <- data.frame(Xdata,as.data.frame(object$Xu[Ws,-1,drop=FALSE]))
           Zdata <- subset(mu, gender=="M")
           Zdata <- data.frame(Zdata,as.data.frame(object$Zu[Ms,-1,drop=FALSE]))
           colnames(Zdata)[match(object$Xid,colnames(Zdata))] <- object$Zid
+          colnames(Zdata)[match("Xtype",colnames(Zdata))] <- "Ztype"
           # random permute to add randomness
           list(population=list(Xdata=Xdata[sample.int(nrow(Xdata)),],
                                Zdata=Zdata[sample.int(nrow(Zdata)),]) )
@@ -628,7 +637,6 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
            ) %dorng% {
            rpm.simulate.small.population.worker(object, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms)
            }
-          parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){

@@ -23,17 +23,16 @@
 #' @param \dots Additional arguments, to be passed to lower-level functions.
 #' @param empirical_p logical; (Optional) If TRUE the function returns the empirical p-value of the sample
 #' statistic based on \code{nsim} simulations
-#' @param nsim integer; (Optional) Number of samples to draw from a large population, simulated based on the model specified
-#' by \code{object}; Must be specified if \code{empirical_p} is TRUE
-#' @param seed integer; (Optional) random number seed.
-#' @param ncores integer; number of cores to use for parallel processing; If greater than 1
-#' then the function will use parallel processing when computing empirical p value
-#' @param parallel.type string; type of cluster to create. Typically, "POCK" or "MPI".
 #' @param compare_sim string; describes which two objects are compared to compute simulated goodness-of-fit
 #' statistics; valid values are \code{"sim-est"}: compares the marginal distribution of pairings in a
 #' simulated sample to the \code{rpm} model estimate of the marginal distribution based on that same simulated sample;
 #' \code{mod-est}: compares the marginal distribution of pairings in a
 #' simulated sample to the \code{rpm} model estimate used to generate the sample
+#' @param control A list of control parameters for algorithm tuning. Constructed using
+#' \code{\link{control.rpm}}, which should be consulted for specifics. 
+#' @param reboot logical; if this is \code{TRUE}, the program will rerun the bootstrap at the coefficient values, rather than 
+#' expect the object to contain a \code{bs.results} component with the bootstrap results run at the solution values.
+#' The latter is the default for \code{rpm} fits.
 #' @param verbose logical; if this is \code{TRUE}, the program will print out
 #' additional information, including data summary statistics.
 #' @return \code{\link{gof.rpm}} returns a list consisting of the following elements:
@@ -62,16 +61,19 @@
 #' @keywords models
 #' @examples
 #' library(rpm)
-#' data(fauxmatching)
 #' \donttest{
+#' data(fauxmatching)
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled")
 #' a <- gof(fit)
-#' }
-#' @references Menzel, K. (2015).
+#'}
+#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+#' \emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+#' Menzel, K. (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
 #' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 #' @export gof
@@ -92,17 +94,12 @@ gof.default <- function(object,...) {
 #' @export
 gof.rpm <- function(object, ...,
                     empirical_p = FALSE,
-                    nsim=1000,
-                    seed = NULL,
-                    ncores = 1,
-                    parallel.type="SOCK",
                     compare_sim = 'sim-est',
+                    control = object$control,
+                    reboot = FALSE,
                     verbose=FALSE) 
 {
-  if(!is.null(seed)) set.seed(seed)
-  if (empirical_p & is.null(nsim)) {
-    stop("When empirical_p is TRUE, please specify the number of simulations used to calculate the empirical p value.")
-  }
+  if(!is.null(control$seed)) set.seed(control$seed)
   
   model_pmf <- object$pmf_est
   observed_pmf <- object$pmf
@@ -111,8 +108,9 @@ gof.rpm <- function(object, ...,
   out$model_pmf <- object$pmf_est
   out$observed_pmf <- object$pmf
   
+  #out$compare_sim <- match.arg(compare_sim, c("sim-est","mod-est"))
   out$compare_sim <- "sim-est"
-
+  
   # Observed Hellinger divergence
   compute_hellinger <- function(observed, expected) {
     hell <- (sqrt(observed)-sqrt(expected))^2
@@ -123,130 +121,270 @@ gof.rpm <- function(object, ...,
   
   # Observed chi-square statistic
   compute_chi_sq <- function(N,observed,expected) {
-    csc <- N*(observed-expected)^2/(expected)
+    csc <- N*(observed-expected)^2/(expected+0.5/N)
+   #csc[observed<1e-10] <- 0
+   #csc[expected<1e-10] <- 0
     csc[nrow(observed),ncol(observed)] = 0
     return(csc)
   }
-  out$obs_chi_sq_cell <- compute_chi_sq(object$N,observed_pmf,model_pmf)
+  out$obs_chi_sq_cell <- compute_chi_sq(object$nobs,observed_pmf,model_pmf)
   out$obs_chi_sq <- sum(out$obs_chi_sq_cell)
   
   # Observed KL divergence
-  compute_kl <- function(observed, expected) {
-    klc <- -observed*log(expected/observed)
-    klc[observed<1e-10] <- 0
+  compute_kl <- function(N,observed, expected) {
+    klc <- -(observed+0.5/N)*log((expected+0.5/N)/(observed+0.5/N))
+   #klc[observed<1e-10] <- 0
     klc[nrow(observed),ncol(observed)] = 0
+    klc[is.na(klc)|is.nan(klc)] <- 0
     return(klc)
   }
-  out$obs_kl_cell <- compute_kl(observed_pmf,model_pmf)
+  out$obs_kl_cell <- compute_kl(object$nobs,observed_pmf,model_pmf)
   out$obs_kl <- sum(out$obs_kl_cell)
   
   if (empirical_p) {
-    if (ncores > 1) {
+    # Get it from the object bootstrap output  
+    if(reboot){
+    if(object$N <= control$large.population.bootstrap){
+        # Use the direct (small population) method
+        # These are the categories of women
+        NumBetaS <- dim(object$Sd)[3]
+        beta_S <- object$coefficients[1:NumBetaS]
+
+        if(dim(object$Xd)[3]>0){
+          beta_w <- object$coefficients[NumBetaS+(1:object$NumBetaW)]
+        }else{
+          beta_w <- NULL
+        }
+        if(dim(object$Zd)[3]>0){
+          beta_m <- object$coefficients[NumBetaS+object$NumBetaW + (1:object$NumBetaM)]
+        }else{
+          beta_m <- NULL
+        }
+
+        # Use the direct (small population) method
+        # These are the categories of women
+        Ws <- rep(seq_along(object$pmfW),round(object$pmfW*object$num_women))
+        if(length(Ws) > object$num_women+0.01){
+         Ws <- Ws[-sample.int(length(Ws),size=length(Ws)-object$num_women,replace=FALSE)]
+        }
+        if(length(Ws) < object$num_women-0.01){
+         Ws <- c(Ws,sample.int(length(object$pmfW),size=object$num_women-length(Ws),prob=object$pmfW,replace=TRUE))
+        }
+        Ws <- Ws[sample.int(length(Ws))]
+        Ms <- rep(seq_along(object$pmfM),round(object$pmfM*object$num_men))
+        if(length(Ms) > object$num_men+0.01){
+         Ms <- Ms[-sample.int(length(Ms),size=length(Ms)-object$num_men,replace=FALSE)]
+        }
+        if(length(Ms) < object$num_men-0.01){
+         Ms <- c(Ms,sample.int(length(object$pmfM),size=object$num_men-length(Ms),prob=object$pmfM,replace=TRUE))
+        }
+        Ms <- Ms[sample.int(length(Ms))]
+
+        # create utility matrices
+        U_star = matrix(0, nrow=length(Ws), ncol = length(Ms))
+        V_star = matrix(0, nrow=length(Ms), ncol = length(Ws))
+        for (ii in 1:NumBetaS) {
+          U_star = U_star + object$Sd[Ws,Ms,ii] * beta_S[ii] * 0.5
+        }
+        if(!is.empty(beta_w)){
+         for (ii in 1:object$NumBetaW) {
+          U_star = U_star + object$Xd[Ws,Ms,ii] * beta_w[ii]
+         }
+        }
+        for (ii in 1:NumBetaS) {
+          V_star = V_star + t(object$Sd[Ws,Ms,ii]) * beta_S[ii] * 0.5
+        }
+        if(!is.empty(beta_m)){
+         for (ii in 1:object$NumBetaM) {
+          V_star = V_star + object$Zd[Ms,Ws,ii] * beta_m[ii]
+         }
+        }
+  
+        # adjust for outside option (remain single)
+
+        Jw <- sqrt(object$num_men)
+        Jm <- sqrt(object$num_women) 
+    }
+
+    num_Xu = nrow(object$Xu)
+    num_Zu = nrow(object$Zu)
+    cnW <- paste(colnames(object$Xu)[2],object$Xu[,2], sep=".")
+    if(ncol(object$Xu)>2){
+    for(i in 3:ncol(object$Xu)){
+      cnW <- paste(cnW,paste(colnames(object$Xu)[i],object$Xu[,i], sep="."),sep='.')
+    }}
+    cnM <- paste(colnames(object$Zu)[2],object$Zu[,2], sep=".")
+    if(ncol(object$Zu)>2){
+    for(i in 2:ncol(object$Zu)){
+      cnM <- paste(cnM,paste(colnames(object$Zu)[i],object$Zu[,i], sep="."),sep='.')
+    }}
+
+    if(control$ncores > 1){
       doFuture::registerDoFuture()
-      cl <- parallel::makeCluster(ncores, type=object$control$parallel.type)
-      future::plan(cluster, workers = cl)
-      if(Sys.info()[["sysname"]] == "Windows"){
-        future::plan(multisession)  ## on MS Windows
-      }else{
-       if(object$control$parallel.type!="MPI"){
-        future::plan(multisession)  ## on Linux, Solaris, and macOS
-       }
-      }
+      future::plan(multisession, workers=control$ncores)  ## on MS Windows
       if (!is.null(object$control$seed)) {
         doRNG::registerDoRNG(object$control$seed)
       }
-      
-      pmf_sim_all <-
-        foreach (b=1:nsim, .packages=c('rpm')
+      if(verbose) message(sprintf("Starting parallel bootstrap using %d cores.",control$ncores))
+       if(object$N > control$large.population.bootstrap){
+        # Use the large population bootstrap
+        bs.results <-
+        foreach::foreach (b=1:control$nbootstrap, .packages=c('rpm')
         ) %dorng% {
-          simulated_out = microsimulate(object,
-                                        pmfW_N=object$pmfW*(exp(object$gw)*object$N),
-                                        pmfM_N=object$pmfM*(exp(object$gm)*object$N),
-                                        large.population=FALSE)
-          simulated_fit = rpm(object$formula,
-                              simulated_out$population$Xdata,
-                              simulated_out$population$Zdata,
-                              Xid="pid",
-                              Zid="pid",
-                              pair_id="pair_id",
-                              X_w="X_w",
-                              Z_w="Z_w", 
-                              pair_w="pair_w",
-                              sampled="sampled",
-                              sampling_design=object$sampling_design)
-          return(list(countsboot=simulated_fit$counts,
-                      pmfboot=simulated_fit$pmf,
-                      pmfboot_est=simulated_fit$pmf_est,
-                      sample_size=simulated_fit$nobs
-          )
-          )
+          rpm.bootstrap.large(b, object$coefficients,
+                      S=object$Sd,X=object$Xd,Z=object$Zd,sampling_design=object$sampling_design,Xdata=object$Xdata,Zdata=object$Zdata,
+                      sampled=object$sampled,
+                      Xid=object$Xid,Zid=object$Zid,pair_id=object$pair_id,X_w=object$X_w,Z_w=object$Z_w,
+                      num_sampled=object$nobs,
+                      NumBeta=object$NumBeta,NumGammaW=object$NumGammaW,NumGammaM=object$NumGammaM,
+                      num_Xu=num_Xu,num_Zu=num_Zu,cnW=cnW,cnM=cnM,LB=object$LB,UB=object$UB,
+                      control=control)
+       }
+      }else{
+        # Use the small population bootstrap
+        bs.results <-
+        foreach::foreach (b=1:control$nbootstrap, .packages=c('rpm')
+        ) %dorng% {
+          rpm.bootstrap.small(b, object$coefficients,
+           num_women=length(Ws), num_men=length(Ms), Jw=Jw, Jm=Jm, U_star=U_star, V_star=V_star, S=object$Sd, X=object$Xd, Z=object$Zd, pmfW=object$pmfW, pmfM=object$pmfM, object$Xu, object$Zu, num_Xu, num_Zu, cnW, cnM, object$Xid, object$Zid, object$pair_id, object$sampled, object$sampling_design, object$NumBeta, object$NumGammaW, object$NumGammaM, object$LB, object$UB, control, object$nobs)
         }
-      parallel::stopCluster(cl)
-      sample_sizes <- unlist(lapply(pmf_sim_all, '[[', 4))
-      simulated_pmf_est <- array(unlist(lapply(pmf_sim_all, '[[', 3)),dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
-      simulated_pmf <-     array(unlist(lapply(pmf_sim_all, '[[', 2)),dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
-      
-    } else { # not parallel
-      countsboot <- array(NA,dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
-      sample_sizes <- rep(0, nsim)
-      simulated_pmf_est <- array(NA,dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
-      simulated_pmf <-     array(NA,dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
-      for (it in 1:nsim) {
-        simulated_out = microsimulate(object,
-                                      pmfW_N=object$pmfW*(exp(object$gw)*object$N),
-                                      pmfM_N=object$pmfM*(exp(object$gm)*object$N),
-                                      large.population=FALSE)
-        simulated_fit = rpm(object$formula,
-                            simulated_out$population$Xdata,
-                            simulated_out$population$Zdata,
-                            Xid="pid",
-                            Zid="pid",
-                            pair_id="pair_id",
-                            X_w="X_w",
-                            Z_w="Z_w", 
-                            pair_w="pair_w",
-                            sampled="sampled",
-                            sampling_design=object$sampling_design)
-        countsboot[,,it] <- simulated_fit$counts
-        simulated_pmf[,,it]  <- simulated_fit$pmf
-        simulated_pmf_est[,,it] <- simulated_fit$pmf_est
-        sample_sizes[it] <- simulated_fit$nobs
+      }
+      if(verbose) message(sprintf("Ended parallel bootstrap\n"))
+    }else{
+#     Start of the non-parallel bootstrap
+      bs.results <- list()
+      for(i in 1:control$nbootstrap){
+        if(object$N > control$large.population.bootstrap){
+        bs.results[[i]] <- rpm.bootstrap.large(b, object$coefficients,
+                      S=object$Sd,X=object$Xd,Z=object$Zd,sampling_design=object$sampling_design,Xdata=object$Xdata,Zdata=object$Zdata,
+                      sampled=object$sampled,
+                      Xid=object$Xid,Zid=object$Zid,pair_id=object$pair_id,X_w=object$X_w,Z_w=object$Z_w,
+                      num_sampled=object$nobs,
+                      NumBeta=object$NumBeta,NumGammaW=object$NumGammaW,NumGammaM=object$NumGammaM,
+                      num_Xu=num_Xu,num_Zu=num_Zu,cnW=cnW,cnM=cnM,LB=object$LB,UB=object$UB,
+                      control=control)
+        }else{
+        bs.results[[i]] <- rpm.bootstrap.small(b, object$coefficients,
+           num_women=length(Ws), num_men=length(Ms), Jw=Jw, Jm=Jm, U_star=U_star, V_star=V_star, S=object$Sd, X=object$Xd, Z=object$Zd, pmfW=object$pmfW, pmfM=object$pmfM, object$Xu, object$Zu, num_Xu, num_Zu, cnW, cnM, object$Xid, object$Zid, object$pair_id, object$sampled, object$sampling_design, object$NumBeta, object$NumGammaW, object$NumGammaM, object$LB, object$UB, control, object$nobs)
+        }
       }
     }
+    }else{
+      if(is.null(object$bs.results)){
+        stop("Goodness-of-Fit was called with 'reboot=FALSE', but the passed object does not contain bootstrap results. Either rerun with 'reboot=TRUE' or re-fit with 'bootstrap=TRUE'.")
+      }
+      bs.results <- object$bs.results
+      object$bs.results <- NULL
+    }
+    # Get it from the object bootstrap output  
+    nsim <- length(bs.results)
+    sample_sizes <- unlist(lapply(bs.results, '[[', "nobs"))
+    simulated_pmf_est <- array(unlist(lapply(bs.results, '[[', "pmf_est")),dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
+    simulated_pmf <-     array(unlist(lapply(bs.results, '[[', "pmf")),dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
     
     if(verbose){
       message(sprintf("Assessing rpm model goodness-of-fit: %s",out$compare_sim))
     }
+    
     # Calculate Hellinger contribution by cell for simulated pmfs
-    sim_hellinger_cell <- array(NA, dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
+    simest_hellinger_cell <- array(NA,dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
+    modest_hellinger_cell <- array(NA,dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
+    sim_hellinger_cell <- array(NA,dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
     for (it in 1:nsim) {
-      sim_hellinger_cell[,,it] = compute_hellinger(simulated_pmf[,,it],simulated_pmf_est[,,it])
+      simest_hellinger_cell[,,it] = compute_hellinger(simulated_pmf[,,it],simulated_pmf_est[,,it])
+      modest_hellinger_cell[,,it] = compute_hellinger(simulated_pmf[,,it],model_pmf)
+      sim_hellinger_cell[,,it] = simest_hellinger_cell[,,it]-modest_hellinger_cell[,,it]
     }
     
     # Calculate chi-square contribution by cell for simulated pmfs
+    simest_chi_sq_cell <- array(NA, dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
+    modest_chi_sq_cell <- array(NA, dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
     sim_chi_sq_cell <- array(NA, dim=c(nrow(object$pmf),ncol(object$pmf),nsim))
     for (it in 1:nsim) {
-      sim_chi_sq_cell[,,it] = compute_chi_sq(sample_sizes[it],simulated_pmf[,,it],simulated_pmf_est[,,it])
+      simest_chi_sq_cell[,,it] = compute_chi_sq(sample_sizes[it],simulated_pmf[,,it],simulated_pmf_est[,,it])
+      modest_chi_sq_cell[,,it] = compute_chi_sq(sample_sizes[it],simulated_pmf[,,it],model_pmf)
+      sim_chi_sq_cell[,,it] = simest_chi_sq_cell[,,it]-modest_chi_sq_cell[,,it]
+      
     }
     
     # Calculate KL contribution by cell for simulated pmfs
+    simest_kl_cell <- array(NA, c(nrow(object$pmf),ncol(object$pmf),nsim))
+    modest_kl_cell <- array(NA, c(nrow(object$pmf),ncol(object$pmf),nsim))
     sim_kl_cell <- array(NA, c(nrow(object$pmf),ncol(object$pmf),nsim))
     for (it in 1:nsim) {
-     #sim_kl_cell[,,it] <- compute_kl(simulated_pmf[,,it],model_pmf)
-      sim_kl_cell[,,it] <- compute_kl(simulated_pmf[,,it],simulated_pmf_est[,,it])
+      simest_kl_cell[,,it] <- compute_kl(sample_sizes[it],simulated_pmf[,,it],simulated_pmf_est[,,it])
+      modest_kl_cell[,,it] <- compute_kl(sample_sizes[it],simulated_pmf[,,it],model_pmf)
+      sim_kl_cell[,,it] <- simest_kl_cell[,,it]-modest_kl_cell[,,it]
+
     }
     
     # Simulated chi_sq, Hellinger and KL divergence statistics
     # This is how far the data PMF should be from the model PMF under the null
-    out$hellinger_simulated <- sqrt(apply(sim_hellinger_cell, 3, sum, na.rm=TRUE))/sqrt(2)
-    out$chi_sq_simulated <- apply(sim_chi_sq_cell, 3, sum, na.rm=TRUE)
-    out$kl_simulated   <-   apply(sim_kl_cell,     3, sum, na.rm=TRUE)
+    out$hellinger_simulated <- sqrt(apply(simest_hellinger_cell, 3, sum, na.rm=TRUE))/sqrt(2)
+    out$chi_sq_simulated <- apply(simest_chi_sq_cell, 3, sum, na.rm=TRUE)
+    out$kl_simulated   <-   apply(simest_kl_cell,     3, sum, na.rm=TRUE)
+
+    b <- matrix(NA,ncol=nsim,nrow=nsim)
+    for(it in 1:nsim){
+      for(it2 in 1:nsim){
+        b[it,it2] <- sqrt(sum(compute_hellinger(simulated_pmf[,,it],simulated_pmf[,,it2]), na.rm=TRUE))/sqrt(2)
+      }
+    }
+    diag(b) <- NA
+    out$sim_hellinger_bs_pmf <- apply(b,1,mean,na.rm=TRUE)
+    out$obs_hellinger_bs_pmf <- apply(simulated_pmf,3,function(x){sqrt(sum(compute_hellinger(x,object$pmf), na.rm=TRUE))/sqrt(2)})
+    out$empirical_p_hellinger <- mean(apply(b,1,function(x){mean(x >= out$obs_hellinger_bs_pmf,na.rm=TRUE)}))
+    h <- rep(0,nsim)
+    for(i in seq_along(h)){h[i] <- mean(b >= out$obs_hellinger_bs_pmf[i],na.rm=TRUE)}
+    out$empirical_p_hellinger <- mean(h)
+    
+    for(it in 1:nsim){
+      for(it2 in 1:nsim){
+        b[it,it2] <- (sum(compute_chi_sq(sample_sizes[it],simulated_pmf[,,it],simulated_pmf[,,it2]), na.rm=TRUE))
+      }
+    }
+    diag(b) <- NA
+    out$sim_chi_sq_bs_pmf <- apply(b,1,mean,na.rm=TRUE)
+    out$obs_chi_sq_bs_pmf <- apply(simulated_pmf,3,function(x){(sum(compute_chi_sq(object$nobs,x,object$pmf), na.rm=TRUE))})
+    out$empirical_p_chi_sq <- mean(apply(b,2,function(x){mean(x >= out$obs_chi_sq_bs_pmf,na.rm=TRUE)}))
+    h <- rep(0,nsim)
+    for(i in seq_along(h)){h[i] <- mean(b >= out$obs_chi_sq_bs_pmf[i],na.rm=TRUE)}
+    out$empirical_p_chi_sq <- mean(h)
+    
+    for(it in 1:nsim){
+      for(it2 in 1:nsim){
+        b[it,it2] <- (sum(compute_kl(sample_sizes[it],simulated_pmf[,,it],simulated_pmf[,,it2]), na.rm=TRUE))
+      }
+    }
+    diag(b) <- NA
+    out$sim_kl_bs_pmf <- apply(b,1,mean,na.rm=TRUE)
+    out$obs_kl_bs_pmf <- apply(simulated_pmf,3,function(x){(sum(compute_kl(object$nobs,x,object$pmf), na.rm=TRUE))})
+    out$empirical_p_kl <- mean(apply(b,2,function(x){mean(x >= out$obs_kl_bs_pmf,na.rm=TRUE)}))
+    h <- rep(0,nsim)
+    for(i in seq_along(h)){h[i] <- mean(b >= out$obs_kl_bs_pmf[i],na.rm=TRUE)}
+    out$empirical_p_kl <- mean(h)
+    
+    out$kl_simulated[is.na(out$kl_simulated)]  <- 0
+    out$kl_simulated_new[is.na(out$kl_simulated_new)]  <- 0
+    out$sim_chi_sq_bs_pmf[is.na(out$sim_chi_sq_bs_pmf)]  <- 0
+    out$obs_chi_sq_bs_pmf[is.nan(out$obs_chi_sq_bs_pmf)]  <- 0
+    out$sim_chi_sq_bs_pmf[is.nan(out$sim_chi_sq_bs_pmf)]  <- 0
+    out$obs_chi_sq_bs_pmf[is.nan(out$obs_chi_sq_bs_pmf)]  <- 0
+    # Remove error est from divergence statistics
+    out$hellinger_simulated_new <- sqrt(apply(simest_hellinger_cell, 3, sum, na.rm=TRUE))/sqrt(2)-sqrt(apply(modest_hellinger_cell, 3, sum, na.rm=TRUE))/sqrt(2)
+    out$chi_sq_simulated_new <- apply(simest_chi_sq_cell, 3, sum, na.rm=TRUE)-apply(modest_chi_sq_cell, 3, sum, na.rm=TRUE)
+    out$kl_simulated_new   <-   apply(simest_kl_cell,     3, sum, na.rm=TRUE)-apply(modest_kl_cell,     3, sum, na.rm=TRUE)
     
     # Empirical p-value
     # This is rank of the observed divergence from that we should see under the null
     out$empirical_p_hellinger <- mean(out$hellinger_simulated >= out$obs_hellinger, na.rm=TRUE)
     out$empirical_p_chi_sq <- mean(out$chi_sq_simulated >= out$obs_chi_sq, na.rm=TRUE)
     out$empirical_p_kl     <- mean(out$kl_simulated >= out$obs_kl, na.rm=TRUE)
+    
+    # Empirical p-value
+    out$empirical_p_hellinger_new <- mean(out$hellinger_simulated_new >= out$obs_hellinger, na.rm=TRUE)
+    out$empirical_p_chi_sq_new <- mean(out$chi_sq_simulated_new >= out$obs_chi_sq, na.rm=TRUE)
+    out$empirical_p_kl_new     <- mean(out$kl_simulated_new >= out$obs_kl, na.rm=TRUE)
     
     # Cell summaries of contributions
     # Mean, SD, Median, IQR for Hellinger
@@ -255,7 +393,7 @@ gof.rpm <- function(object, ...,
     dimnames(out$hellinger_cell_mean) <- r_dimnames
     
     out$hellinger_cell_sd <- apply(sim_hellinger_cell, 1:2, stats::sd, na.rm=TRUE)
-    dimnames(out$hellinger_cell_sd) <- r_dimnames
+    dimnames(out$hellinger_cell_sd) <- r_dimnames    
     
     out$hellinger_cell_median <- apply(sim_hellinger_cell, 1:2, stats::median, na.rm=TRUE)
     dimnames(out$hellinger_cell_median) <- r_dimnames
@@ -268,7 +406,7 @@ gof.rpm <- function(object, ...,
     dimnames(out$chi_sq_cell_mean) <- r_dimnames
     
     out$chi_sq_cell_sd <- apply(sim_chi_sq_cell, 1:2, stats::sd, na.rm=TRUE)
-    dimnames(out$chi_sq_cell_sd) <- r_dimnames
+    dimnames(out$chi_sq_cell_sd) <- r_dimnames    
     
     out$chi_sq_cell_median <- apply(sim_chi_sq_cell, 1:2, stats::median, na.rm=TRUE)
     dimnames(out$chi_sq_cell_median) <- r_dimnames

@@ -2,10 +2,9 @@
 % Please edit documentation in R/rpm-internal.R
 \name{rpm-internal}
 \alias{rpm-internal}
-\alias{GSi_TU}
 \alias{GSi_NTU}
-\alias{GS_TU}
 \alias{GS_NTU}
+\alias{GSi_NTU_O}
 \alias{PSeqcond}
 \alias{PSgeqcond}
 \alias{augpmf}
@@ -13,13 +12,14 @@
 \alias{augpmfnew}
 \alias{checkstable}
 \alias{eqcond}
-\alias{geqcond}
-\alias{gloglik}
-\alias{hloglik}
+\alias{jeqcond_nog}
+\alias{gloglik_nog}
+\alias{hloglik_nog}
 \alias{loglik}
 \alias{probcounts}
 \alias{qloglik}
 \alias{stablearma}
+\alias{loglikfun_nog}
 \title{Internal rpm Objects}
 \description{
 Internal \code{\link[=rpm-package]{rpm}} functions.

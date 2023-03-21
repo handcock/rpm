@@ -59,15 +59,11 @@ rpm.bootstrap.large <- function(I, solution,
         if(nrow(ZdataS)>0) ZdataS[,sampled] <- TRUE
         if(nrow(XdataS)>0) XdataS[paired_and_sampled_W,X_w] <- XdataS[paired_and_sampled_W,X_w] + ZdataW[,Z_w]
         if(nrow(ZdataS)>0) ZdataS[paired_and_sampled_M,Z_w] <- ZdataS[paired_and_sampled_M,Z_w] + XdataM[,X_w]
-        if(nrow(XdataM)>0) XdataM[,X_w] <- 0
-        if(nrow(ZdataW)>0) ZdataW[,Z_w] <- 0
         if(nrow(XdataM)>0) XdataM[,sampled] <- FALSE
         if(nrow(ZdataW)>0) ZdataW[,sampled] <- FALSE
       } else if (sampling_design == "stock-stock"){ 
         if(nrow(XdataS)>0) XdataS[,sampled] <- TRUE
         if(nrow(ZdataS)>0) ZdataS[,sampled] <- TRUE
-        if(nrow(XdataM)>0) XdataM[,X_w] <- 0
-        if(nrow(ZdataW)>0) ZdataW[,Z_w] <- 0
         if(nrow(XdataM)>0) XdataM[,sampled] <- TRUE
         if(nrow(ZdataW)>0) ZdataW[,sampled] <- TRUE
       }
@@ -154,6 +150,18 @@ rpm.bootstrap.large <- function(I, solution,
         gm = log(nrow(Zdata)/N)
       }
 
+      # Compute the number sampled (mainly for the s.e. computation)
+      if (sampling_design == "stock-stock") {
+       num_sampled <- nrow(Xdata)+nrow(Zdata)-sum(!is.na(Zdata[,pair_id]))
+      }else{
+       if (sampling_design == "stock-flow") {
+        num_sampled <- sum(Xdata[,sampled])+sum(Zdata[,sampled])
+       }else{
+        # census for now
+        num_sampled <- nrow(Xdata)+nrow(Zdata)
+       }
+      }
+
       pmf = matrix(0,nrow=1+num_Xu, ncol=1+num_Zu) # women (X) indexed by row, men (Z) indexed by column
       counts = matrix(0,nrow=1+num_Xu, ncol=1+num_Zu) # women (X) indexed by row, men (Z) indexed by column
       colnames(pmf) <- c(cnM,"singles")
@@ -201,10 +209,11 @@ rpm.bootstrap.large <- function(I, solution,
 
       control$xtol_rel=control$bs.xtol_rel
       control$maxeval=control$bs.maxeval
+      
       out.text <- capture.output(
-       out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun_default, 
-                 eval_grad_f=gloglikfun_default,
-                 eval_g_eq=eqfun_default,  eval_jac_g_eq=jeqfun_default,
+       out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun_nog, 
+                 eval_grad_f=gloglikfun_nog,
+                 eval_g_eq=eqfun_nog,  eval_jac_g_eq=jeqfun_nog,
                  lb=LB,ub=UB,
                  Sd=S,Xd=X,Zd=Z,NumGammaW=NumGammaW, NumGammaM=NumGammaM,
                  pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
@@ -221,13 +230,11 @@ rpm.bootstrap.large <- function(I, solution,
       out.fit$eval_f  <- NULL
 
       th_hat <-  out.fit$solution
-      hat_gw <- th_hat[NumBeta+NumGammaW+NumGammaM+1]
-      hat_gm <- log(1-exp(hat_gw))
       pmf_est <- exp(augpmfnew(th_hat[1:NumBeta],
                 GammaW=th_hat[NumBeta+(1:NumGammaW)], 
                 GammaM=th_hat[(NumBeta+NumGammaW)+(1:NumGammaM)],
                 S, X, Z,
-                pmfW, pmfM, gw=hat_gw, gm=hat_gm))
+                pmfW, pmfM, gw=gw, gm=gm))
       pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
       pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
       pmf_est <- pmf_est/sum(pmf_est)
@@ -256,8 +263,17 @@ rpm.bootstrap.large <- function(I, solution,
       names(LOGODDS_SW) <- paste0("LOD_Single.W.",cnW)
       names(LOGODDS_SM) <- paste0("LOD_Single.M.",cnM)
 
+      pmfN_households <- pmfN
+      pmfN_households[-nrow(pmfN), -ncol(pmfN)] <- 0.5*pmfN[-nrow(pmfN), -ncol(pmfN)]
+      pmf_households <- pmfN_households / sum(pmfN_households)
+      loglik <- stats::dmultinom(x=pmfN_households,prob=pmf_est,log=TRUE)
+
       list(est=th_hat, LOGODDS_SW=LOGODDS_SW,LOGODDS_SM=LOGODDS_SM,
            Xdata=Xdata,
            Zdata=Zdata,
-           pmf_est=pmf_est )
+           pmfW=pmfW, pmfM=pmfM,
+           pmf=pmf, counts=counts, nobs=num_sampled,
+           pmf_est=pmf_est,
+           aic = 2*NumBeta-2*loglik, bic=log(num_sampled)*NumBeta-2*loglik, loglik=loglik
+          )
      }

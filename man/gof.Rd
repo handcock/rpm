@@ -13,11 +13,9 @@ gof(object, ...)
   object,
   ...,
   empirical_p = FALSE,
-  nsim = 1000,
-  seed = NULL,
-  ncores = 1,
-  parallel.type = "SOCK",
   compare_sim = "sim-est",
+  control = object$control,
+  reboot = FALSE,
   verbose = FALSE
 )
 
@@ -31,21 +29,18 @@ gof(object, ...)
 \item{empirical_p}{logical; (Optional) If TRUE the function returns the empirical p-value of the sample
 statistic based on \code{nsim} simulations}
 
-\item{nsim}{integer; (Optional) Number of samples to draw from a large population, simulated based on the model specified
-by \code{object}; Must be specified if \code{empirical_p} is TRUE}
-
-\item{seed}{integer; (Optional) random number seed.}
-
-\item{ncores}{integer; number of cores to use for parallel processing; If greater than 1
-then the function will use parallel processing when computing empirical p value}
-
-\item{parallel.type}{string; type of cluster to create. Typically, "POCK" or "MPI".}
-
 \item{compare_sim}{string; describes which two objects are compared to compute simulated goodness-of-fit
 statistics; valid values are \code{"sim-est"}: compares the marginal distribution of pairings in a
 simulated sample to the \code{rpm} model estimate of the marginal distribution based on that same simulated sample;
 \code{mod-est}: compares the marginal distribution of pairings in a
 simulated sample to the \code{rpm} model estimate used to generate the sample}
+
+\item{control}{A list of control parameters for algorithm tuning. Constructed using
+\code{\link{control.rpm}}, which should be consulted for specifics.}
+
+\item{reboot}{logical; if this is \code{TRUE}, the program will rerun the bootstrap at the coefficient values, rather than 
+expect the object to contain a \code{bs.results} component with the bootstrap results run at the solution values.
+The latter is the default for \code{rpm} fits.}
 
 \item{verbose}{logical; if this is \code{TRUE}, the program will print out
 additional information, including data summary statistics.}
@@ -115,8 +110,8 @@ See \code{\link{rpm}} for more information on these models.
 }}
 \examples{
 library(rpm)
-data(fauxmatching)
 \donttest{
+data(fauxmatching)
 fit <- rpm(~match("edu") + WtoM_diff("edu",3),
           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
           X_w="X_w", Z_w="Z_w",
@@ -126,6 +121,9 @@ a <- gof(fit)
 }
 }
 \references{
+Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+\emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+\emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
 Menzel, K. (2015).
 \emph{Large Matching Markets as Two-Sided Demand Systems}
 Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.

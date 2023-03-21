@@ -1,6 +1,39 @@
 #' @keywords internal
+.catchToList <- function(expr) {
+  val <- NULL
+  myWarnings <- NULL
+  wHandler <- function(w) {
+    myWarnings <<- c(myWarnings, w$message)
+    invokeRestart("muffleWarning")
+  }
+  myError <- NULL
+  eHandler <- function(e) {
+    myError <<- e$message
+    NULL
+  }
+  val <- tryCatch(withCallingHandlers(expr, warning = wHandler), error = eHandler)
+  list(value = val, warnings = myWarnings, error=myError)
+} 
+mode.density <- function(x){
+   minx <- min(x)
+   maxx <- max(x)
+   xp <- seq(minx, maxx, length=1000)
+   a=bgk_kde(x,n=2^(ceiling(log((maxx-minx))/log(2))),MIN=minx,MAX=maxx)
+   posdens <- stats::spline(x=a[1,],y=a[2,],xout=xp)$y
+   posdens <- 1000*posdens / ((maxx-minx)*sum(posdens))
+   map <- xp[which.max(posdens)]
+   map
+}
+
+#' @keywords internal
+is.empty <- function(x, mode=NULL){
+    if (is.null(x)) return(TRUE)
+    if (is.null(mode)) mode <- class(x)
+    identical(vector(mode,1),c(x,vector(class(x),1)))
+}
+#' @keywords internal
 #' @importFrom MASS ginv
-rpm.hessian <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,pmfW,pmfM,pmf,counts,gw,gm,N,sampling,constraints,verbose=TRUE){
+rpm.hessian_nog <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,pmfW,pmfM,pmf,counts,gw,gm,N,sampling,constraints,verbose=TRUE){
    if(length(N) > 1){
      ext.covar <- diag(length(theta))
      dimnames(ext.covar) <- list(names(theta),names(theta))
@@ -11,24 +44,19 @@ rpm.hessian <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,pmfW
       beta <- theta[1:NumBeta]
       GammaW <- theta[NumBeta+(1:NumGammaW)]
       GammaM <- theta[(NumBeta+NumGammaW)+(1:NumGammaM)]
-      gw <- theta[(NumBeta+NumGammaW+NumGammaM+1)]
-      gm <- log(1-exp(gw))
-      -hloglik(beta, GammaW, GammaM, Sd, Xd, Zd, dim(Sd), dim(Xd), dim(Zd), pmfW, pmfM, pmf, counts, gw, gm, constraints)
+      -hloglik_nog(beta, GammaW, GammaM, Sd, Xd, Zd, dim(Sd), dim(Xd), dim(Zd), pmfW, pmfM, pmf, counts, gw, gm, constraints)
     }
    H <- hloglikfun(theta,
      Sd=Sd,Xd=Xd,Zd=Zd,NumGammaW=NumGammaW, NumGammaM=NumGammaM,
      pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=counts, gw=gw, gm=gm, sampling=sampling, constraints=constraints)
-#
    jeqfun <- function(theta, Sd, Xd, Zd, NumGammaW, NumGammaM, pmfW, pmfM, pmf, counts, gw, gm, sampling, constraints){
      NumBeta <- dim(Sd)[3]+dim(Xd)[3]+dim(Zd)[3]
      beta <- theta[1:NumBeta]
      GammaW <- theta[NumBeta+(1:NumGammaW)]
      GammaM <- theta[(NumBeta+NumGammaW)+(1:NumGammaM)]
-     gw <- theta[(NumBeta+NumGammaW+NumGammaM+1)]
-     gm <- log(1-exp(gw))
-     geqcond(beta, GammaW, GammaM, Sd, Xd, Zd, dim(Sd), dim(Xd), dim(Zd), pmfW, pmfM, pmf, counts, gw, gm, constraints)
+     jeqcond_nog(beta, GammaW, GammaM, Sd, Xd, Zd, dim(Sd), dim(Xd), dim(Zd), pmfW, pmfM, pmf, counts, gw, gm, constraints)
     }
-   GJ <- jeqfun_default(theta,
+   GJ <- jeqfun_nog(theta,
            Sd=Sd,Xd=Xd,Zd=Zd,NumGammaW=NumGammaW, NumGammaM=NumGammaM,
            pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=counts, gw=gw, gm=gm, sampling=sampling,
            constraints=constraints)
@@ -40,9 +68,9 @@ rpm.hessian <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,pmfW
      dimnames(GJ) <- list(c(names(theta)[(NumBeta+1):(NumBeta+NumGamma)],paste0("M_",1:(NumGammaM))),
                           names(theta))
    }
-   dimnames(H) <- list(names(theta)[1:(NumBeta+NumGamma+1)], names(theta)[1:(NumBeta+NumGamma+1)])
+   dimnames(H) <- list(names(theta)[1:(NumBeta+NumGamma)], names(theta)[1:(NumBeta+NumGamma)])
    Hi <- try(MASS::ginv(H))
-   dimnames(Hi) <- list(names(theta)[1:(NumBeta+NumGamma+1)], names(theta)[1:(NumBeta+NumGamma+1)])
+   dimnames(Hi) <- list(names(theta)[1:(NumBeta+NumGamma)], names(theta)[1:(NumBeta+NumGamma)])
    if(inherits(Hi,"try-error")){
      if(verbose) message("Trouble computing the standard errors. They are approximate.")
      Hi <- diag(1/diag(H))
@@ -64,43 +92,9 @@ rpm.hessian <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,pmfW
    }else{
      covar <- V
    }
-# Next constrained
-  ext.covar=Mi[1:(NumBeta+NumGamma+1),1:(NumBeta+NumGamma+1)]
+# Next unconstrained variances
+  ext.covar=Mi[1:(NumBeta+NumGamma),1:(NumBeta+NumGamma)]
   dimnames(ext.covar) <- list(names(theta),names(theta))
+
   list(covar=covar,ext.covar=ext.covar,covar.unconstrained=Hi)
-}
-
-#' @keywords internal
-.catchToList <- function(expr) {
-  val <- NULL
-  myWarnings <- NULL
-  wHandler <- function(w) {
-    myWarnings <<- c(myWarnings, w$message)
-    invokeRestart("muffleWarning")
-  }
-  myError <- NULL
-  eHandler <- function(e) {
-    myError <<- e$message
-    NULL
-  }
-  val <- tryCatch(withCallingHandlers(expr, warning = wHandler), error = eHandler)
-  list(value = val, warnings = myWarnings, error=myError)
-} 
-#' @keywords internal
-mode.density <- function(x){
-   minx <- min(x)
-   maxx <- max(x)
-   xp <- seq(minx, maxx, length=1000)
-   a=bgk_kde(x,n=2^(ceiling(log((maxx-minx))/log(2))),MIN=minx,MAX=maxx)
-   posdens <- stats::spline(x=a[1,],y=a[2,],xout=xp)$y
-   posdens <- 1000*posdens / ((maxx-minx)*sum(posdens))
-   map <- xp[which.max(posdens)]
-   map
-}
-
-#' @keywords internal
-is.empty <- function(x, mode=NULL){
-    if (is.null(x)) return(TRUE)
-    if (is.null(mode)) mode <- class(x)
-    identical(vector(mode,1),c(x,vector(class(x),1)))
 }

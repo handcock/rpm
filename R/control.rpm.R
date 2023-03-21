@@ -97,7 +97,7 @@ utils::globalVariables(c(".control.rpm"))
 control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level=0,
                         xtol_rel=1.0e-8, ftol_rel=1e-8, ftol_abs=1.0e-6,
                         lower.bound=-10, upper.bound=10,
-                        maxeval=1000, bs.maxeval=1000, bs.xtol_rel=1.0e-6,
+                        maxeval=2000, bs.maxeval=2000, bs.xtol_rel=1.0e-8,
                         check_derivatives=FALSE, bootstrap=TRUE, hessian=FALSE, seed = NULL,
                         parallel.type="PSOCK",
                         parallel.ncores=1,
@@ -107,7 +107,7 @@ control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level
                         save.data=TRUE,
                         robust.cov=FALSE,
                         local_opts=list("algorithm"="NLOPT_LD_SLSQP","xtol_rel"=1.0e-7, "maxeval"=maxeval),
-                        nbootstrap=100,
+                        nbootstrap=50,
                         nbootstrap.SD=20,
                         large.population.bootstrap=5000,
                         alpha=0.05

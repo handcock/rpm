@@ -79,12 +79,12 @@
 #' \item{eq}{Values from the equality constraints. Larger values indicate non-convergence.}
 #' \item{sample}{A matrix with the number of rows the MCMC sample size and the number of rows the number of parameters.}
 #' @seealso control.rpm, summary.rpm, print.rpm
-#' @references Menzel, Konrad (2015).
-#' \emph{Large Matching Markets as Two-Sided Demand Systems}
-#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
-#' Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+#' Menzel, K. (2015).
+#' \emph{Large Matching Markets as Two-Sided Demand Systems}
+#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 #' @keywords models
 #' @examples
 #' library(rpm)
@@ -202,6 +202,8 @@ rpm <- function(formula, Xdata, Zdata,
                     sampling_design=sampling_design,
                     control=control, verbose=verbose)
 
-    return(fit)
+    fit$aic = 2*fit$NumBeta-2*fit$loglik
+    fit$bic = log(fit$nobs)*fit$NumBeta-2*fit$loglik
 
+    return(fit)
 }

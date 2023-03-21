@@ -7,18 +7,13 @@ GS_NTU <- function(U, V) {
 }
 
 #' @export
-GS_TU <- function(U, V) {
-    .Call('_rpm_GS_TU', PACKAGE = 'rpm', U, V)
+GSi_NTU <- function(U, V, nmax) {
+    .Call('_rpm_GSi_NTU', PACKAGE = 'rpm', U, V, nmax)
 }
 
 #' @export
-GSi_NTU <- function(U, V) {
-    .Call('_rpm_GSi_NTU', PACKAGE = 'rpm', U, V)
-}
-
-#' @export
-GSi_TU <- function(U, V) {
-    .Call('_rpm_GSi_TU', PACKAGE = 'rpm', U, V)
+GSi_NTU_O <- function(U, V, O, Ua, nmax) {
+    .Call('_rpm_GSi_NTU_O', PACKAGE = 'rpm', U, V, O, Ua, nmax)
 }
 
 #' @export
@@ -65,18 +60,18 @@ eqcond <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmf
 }
 
 #' @export
-geqcond <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
-    .Call('_rpm_geqcond', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+gloglik_nog <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
+    .Call('_rpm_gloglik_nog', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
 }
 
 #' @export
-gloglik <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
-    .Call('_rpm_gloglik', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+hloglik_nog <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
+    .Call('_rpm_hloglik_nog', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
 }
 
 #' @export
-hloglik <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
-    .Call('_rpm_hloglik', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+jeqcond_nog <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
+    .Call('_rpm_jeqcond_nog', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
 }
 
 #' @export

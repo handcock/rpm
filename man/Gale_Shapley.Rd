@@ -4,7 +4,7 @@
 \alias{Gale_Shapley}
 \title{This is the version of Gale-Shapley stable matching algorithm (translated from the Matlab code in Menzel (2015)).}
 \usage{
-Gale_Shapley(U, V, return.data.frame = FALSE, NTU = TRUE, cpp = TRUE)
+Gale_Shapley(U, V, return.data.frame = FALSE, cpp = TRUE, nmax = 10 * nrow(U))
 }
 \arguments{
 \item{U}{The utility matrix for the women's side. Each row is a woman, each column is a man.
@@ -18,9 +18,10 @@ In other words, the utility is computed from man \code{j}'s perspective.}
 \item{return.data.frame}{logical Should a \code{data.frame} of the matching be returned instead of the
 paring matrix mu?}
 
-\item{NTU}{logical Should the matching be transferable utility or non-transferable utility (the default)?}
-
 \item{cpp}{logical Should the \code{Rcpp} version of the code be used. This is much faster and uses a lot less memory.}
+
+\item{nmax}{count The maximum number of iterations of the inner loop within the Gale-Shapley algorithm.
+This can be reduced to speed up the algorithm at the potential cost of many partnerships being non-equilibruim.}
 }
 \value{
 The function return depends on the \code{return.data.frame} value. 
@@ -39,7 +40,10 @@ rows in \code{U}. The order of the columns is the same as the columns in \code{V
 This code allows the self-matched option
 }
 \references{
-Menzel, Konrad (2015).
+Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+\emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+\emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+Menzel, K. (2015).
 \emph{Large Matching Markets as Two-Sided Demand Systems}
 Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 }

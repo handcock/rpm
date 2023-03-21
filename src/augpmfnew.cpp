@@ -9,9 +9,9 @@ using namespace Rcpp;
 
 //' @export
 // [[Rcpp::export]]
-arma::mat augpmfnew(arma::vec beta, arma::vec GammaW, arma::vec GammaM, arma::cube S, arma::cube X, arma::cube Z, arma::vec pmfW, arma::vec
-pmfM, double gw, double gm) {
+arma::mat augpmfnew(arma::vec beta, arma::vec GammaW, arma::vec GammaM, arma::cube S, arma::cube X, arma::cube Z, arma::vec pmfW, arma::vec pmfM, double gw, double gm) {
   unsigned int it=0u;
+//unsigned int NumBeta=beta.size();
   unsigned int NumGammaW=GammaW.size();
   unsigned int NumGammaM=GammaM.size();
   unsigned int NumGamma=NumGammaW+NumGammaM;
@@ -38,6 +38,7 @@ pmfM, double gw, double gm) {
   while (dot(GammaDiff,GammaDiff) > 1E-9 && it < 40u) {
    eqcond = PSeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm);
    J = PSgeqcond(beta, Gamma, S, X, Z, pmfW, pmfM, gw, gm)+delta;
+// Gamma = Gamma - arma::inv(J)*eqcond;
    GammaDiff = arma::inv(J)*eqcond;
    Gamma = Gamma - GammaDiff;
    if(std::isnan(Gamma(0))){
@@ -62,11 +63,15 @@ pmfM, double gw, double gm) {
      Ustar += beta(i+S.n_slices)*X(j,k,i);
     }
     Vstar = 0.0;
+//  for (i = 0; i < S.n_slices; ++i) {
+//   Vstar += beta(i)*S(k,j,i);
+//  }
     for (i = 0; i < Z.n_slices; ++i) {
      Vstar += beta(i+S.n_slices+X.n_slices)*Z(k,j,i);
     }
     Wstar += Ustar + Vstar;
     apmf(j,k) = log(2.0)+(Wstar + GammaW(j)+ GammaM(k) + gm + gw + log(pmfW(j)*pmfM(k))-log((1.0+exp(GammaW(j)))*(1.0+exp(GammaM(k))))) ;
+//  apmf(j,k) = (Wstar + GammaW(j)+ GammaM(k) + gm + gw + log(pmfW(j)*pmfM(k))-log((1.0+exp(GammaW(j)))*(1.0+exp(GammaM(k))))) ;
    }
   }
 

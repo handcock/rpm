@@ -5,7 +5,7 @@ using namespace Rcpp;
 // Rcpp attribute tag require to create interface to R.
 //' @export
 // [[Rcpp::export]]
-NumericMatrix geqcond(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints){
+NumericMatrix jeqcond_nog(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints){
   arma::cube S(Sd.begin(), Sdim[0], Sdim[1], Sdim[2]);
   arma::cube X(Xd.begin(), Xdim[0], Xdim[1], Xdim[2]);
   arma::cube Z(Zd.begin(), Zdim[0], Zdim[1], Zdim[2]);
@@ -21,13 +21,14 @@ NumericMatrix geqcond(NumericVector beta, NumericVector GammaW, NumericVector Ga
   double pfps;
 
 // rows are constraints, columns parameters
-  NumericMatrix gf(NumGamma+NumGammaM*(constraints==0),NumBeta+NumGamma+1);
+  NumericMatrix gf(NumGamma+NumGammaM*(constraints==0),NumBeta+NumGamma);
   for (l = 0; l < NumGamma+NumGammaM*(constraints==0); ++l) {
-   for (i = 0; i < NumBeta+NumGamma+1; ++i) {
+   for (i = 0; i < NumBeta+NumGamma; ++i) {
     gf(l,i)=0.0;
    }
   }
 
+// Now g(x,*)
   for (j = 0; j < NumGammaW; ++j) {
    for (k = 0; k < NumGammaM; ++k) {
     Wstar = 0.0;
@@ -54,7 +55,6 @@ NumericMatrix geqcond(NumericVector beta, NumericVector GammaW, NumericVector Ga
     for (i = 0; i < Mdm; ++i) {
      gf(j,i+Sdm+Wdm) += Z(k,j,i)*pfps;
     }
-    gf(j,NumBeta+NumGamma) += -pfps*exp(gw-gm);
    }
    gf(j,NumBeta+j)= exp(-GammaW(j));
   }
@@ -86,7 +86,6 @@ NumericMatrix geqcond(NumericVector beta, NumericVector GammaW, NumericVector Ga
     for (i = 0; i < Mdm; ++i) {
      gf(k+NumGammaW,i+Sdm+Wdm) += Z(k,j,i)*pfps;
     }
-    gf(k+NumGammaW,NumBeta+NumGamma) += pfps;
    }
    gf(k+NumGammaW,NumBeta+NumGammaW+k)= exp(-GammaM(k));
   }

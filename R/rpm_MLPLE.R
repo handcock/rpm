@@ -76,14 +76,17 @@
 #' \item{covar}{Approximate covariance matrix of the estimates.}
 #' \item{eq}{Values from the equality constraints. Larger values indicate non-convergence.}
 #' @seealso control.rpm, summary.rpm, print.rpm
-#' @references Menzel, Konrad (2015).
+#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+#' \emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+#' Menzel, K. (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
 #' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 #' @keywords models
 #' @examples
 #' library(rpm)
-#' data(fauxmatching)
 #' \donttest{
+#' data(fauxmatching)
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
@@ -92,6 +95,7 @@
 #' summary(fit)
 #' }
 #' @importFrom MASS cov.mcd
+#' @export rpm_MLPLE
 rpm_MLPLE <- function(formula, Xdata, Zdata,
     Xid=NULL, Zid=NULL, pair_id=NULL,
     X_w=NULL, Z_w=NULL, pair_w=NULL,
@@ -329,7 +333,6 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     NumBetaW <- dim(X)[3]
     NumBetaM <- dim(Z)[3]
     NumBeta <- NumBetaS + NumBetaW + NumBetaM
-    NumBetaG <- NumBeta + 1
     NumGammaW <- num_Xu
     NumGammaM <- num_Zu
     NumGamma <- NumGammaW + NumGammaM
@@ -337,61 +340,30 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     # 6) Set init_theta to a good starting value to save time
     init_theta = control[["init_theta"]]
     if(is.null(init_theta)|!is.vector(init_theta, mode = "numeric")|!(length(init_theta) %in% c(NumBeta,NumBeta+NumGamma))){
-        init_theta <- vector(5,mode="list")
-        init_theta[[1]] <- 
+        init_theta <- 
                        c(log(sum(pmf[-nrow(pmf),-ncol(pmf)])/(1-sum(pmf[-nrow(pmf),-ncol(pmf)]))),
                         rep(0,NumBeta-1),
                        -log(c(2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],1,sum)/pmf[-nrow(pmf),ncol(pmf),drop=FALSE],
                               2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],2,sum)/pmf[nrow(pmf),-ncol(pmf),drop=FALSE])))
-        init_theta[[2]] <- 
-                       c(rep(0,NumBeta),
-                       -log(c(2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],1,sum)/pmf[-nrow(pmf),ncol(pmf),drop=FALSE],
-                              2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],2,sum)/pmf[nrow(pmf),-ncol(pmf),drop=FALSE])))
-        init_theta[[3]] <- rep(c(0,1),c(NumBeta,NumGamma))
-        init_theta[[4]] <- init_theta[[1]] / 2
     }else{
      tmp <- init_theta
      if(identical(length(init_theta),NumBeta+NumGamma)){
-       init_theta <- vector(2,mode="list")
-       init_theta[[1]] <- tmp
+       init_theta <- tmp
      }else{if(identical(length(init_theta),NumBeta)){
-       init_theta <- vector(4,mode="list")
-       init_theta[[1]] <- c(tmp,
+       init_theta <- c(tmp,
                        -log(c(2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],1,sum)/pmf[-nrow(pmf),ncol(pmf),drop=FALSE],
                               2*apply(pmf[-nrow(pmf),-ncol(pmf)],2,sum)/pmf[nrow(pmf),-ncol(pmf)])))
-       init_theta[[2]] <- c(tmp,
-                       -log(c(apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],1,sum)/pmf[-nrow(pmf),ncol(pmf),drop=FALSE],
-                              2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],2,sum)/pmf[nrow(pmf),-ncol(pmf),drop=FALSE])))
-        init_theta[[3]] <- c(tmp,rep(1,NumGamma))
      }}
     }
+    init_theta[is.na(init_theta) | is.nan(init_theta)] <- 0
     nstr = c(modelmat$Snames, modelmat$Xnames, modelmat$Znames)
-    for(i in seq_along(init_theta)){
-     if(!is.empty(init_theta[[i]])){
-      names(init_theta[[i]]) <- c(nstr, paste0("LOD_Single.W.",cnW), paste0("LOD_Single.M.",cnM))
-     }
-    }
+    names(init_theta) <- c(nstr, paste0("LOD_Single.W.",cnW), paste0("LOD_Single.M.",cnM))
     if(verbose){
       message("Initial estimate set to:")
-      print(init_theta[[1]])
+      print(init_theta)
     }
 
-    init_theta[[1]] <- c(init_theta[[1]],gw)
-    names(init_theta[[1]])[length(init_theta[[1]])] <- "gw"
-    
     # core algorithm begins
-    
-    betaS <- init_theta[[1]][1:NumBetaS]
-    if(NumBetaW > 0){
-     betaW <- init_theta[[1]][NumBetaS + (1:NumBetaW)]
-    }else{
-     betaW <- NULL
-    }
-    if(NumBetaM > 0){
-     betaM <- init_theta[[1]][NumBetaS + NumBetaW + (1:NumBetaM)]
-    }else{
-     betaM <- NULL
-    }
     
     constraints <- control[["constraints"]]
     constraints <- match.arg(control[["constraints"]], c("none","M_single"))
@@ -405,37 +377,31 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       )
     }
 
-    #  Only do the first estimate, afterall.
-    init_theta  <- list(init_theta[[1]])
-
-    if(length(control$lower.bound)<(NumBetaG+NumGamma)){
-      LB <- c(rep(control$lower.bound[1],NumBeta),rep(control$lower.bound[1],NumGamma),control$lower.bound[1])
+    if(length(control$lower.bound)<(NumBeta+NumGamma)){
+      LB <- c(rep(control$lower.bound[1],NumBeta),rep(control$lower.bound[1],NumGamma))
     }else{
-      LB <- control$lower.bound[1:(NumBetaG+NumGamma)]
+      LB <- control$lower.bound[1:(NumBeta+NumGamma)]
     }
-    if(length(control$upper.bound)<(NumBetaG+NumGamma)){
-      UB <- c(rep(control$upper.bound[1],NumBeta),rep(control$upper.bound[1],NumGamma),-0.01)
+    if(length(control$upper.bound)<(NumBeta+NumGamma)){
+      UB <- c(rep(control$upper.bound[1],NumBeta),rep(control$upper.bound[1],NumGamma))
     }else{
-      UB <- control$upper.bound[1:(NumBetaG+NumGamma)]
+      UB <- control$upper.bound[1:(NumBeta+NumGamma)]
     }
     if(any(LB>UB) | all(LB==UB)){
       stop("The lower bounds on the estimates should be at most the upper bounds. Please respecify them.")
     }
 
-    loglikfun=loglikfun_default
-    gloglikfun=gloglikfun_default
-    eqfun=eqfun_default
-    jeqfun=jeqfun_default
+    loglikfun=loglikfun_nog
+    gloglikfun=gloglikfun_nog
+    eqfun=eqfun_nog
+    jeqfun=jeqfun_nog
 
-    test_eqcond=eqfun(init_theta[[1]], Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design, constraints)
+    test_eqcond=eqfun(init_theta, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design, constraints)
 
-    out.list <- vector(length(init_theta),mode="list")
-    for(i in seq_along(init_theta)){
-     if(!is.empty(init_theta[[i]])){
-      init_theta[[i]][init_theta[[i]]>=UB[i]] = UB[i]-0.01
-      init_theta[[i]][init_theta[[i]]<=LB[i]] = LB[i]+0.01
-      out.text <- capture.output(
-        out.list[[i]] <- nloptr::nloptr(x0=init_theta[[i]], eval_f=loglikfun, 
+    init_theta[init_theta>=UB] = UB[init_theta>=UB]-0.01
+    init_theta[init_theta<=LB] = LB[init_theta<=LB]+0.01
+    out.text <- capture.output(
+        out.list <- nloptr::nloptr(x0=init_theta, eval_f=loglikfun, 
                   eval_grad_f=gloglikfun,
                   eval_g_eq=eqfun,  eval_jac_g_eq=jeqfun,
                   lb=LB,ub=UB,
@@ -443,88 +409,42 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
                   pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
                   sampling=sampling_design, constraints=constraints,
                   opts=control)
-      )
-      if(any(startsWith("Error",c(" ",out.text)))){
-        message(sprintf("Optimization for starting value %d is overly constrained. Estimates may be unstable.",i))
-      }
-      # Remove the large associated environments
-      out.list[[i]]$nloptr_environment<- NULL
-      out.list[[i]]$eval_g_eq <- NULL
-      out.list[[i]]$eval_f  <- NULL
-      names(out.list[[i]]$solution) <- names(init_theta[[1]])
-      if(i==1){
-       init_theta[[length(init_theta)]] <- out.list[[1]]$solution 
-      }
-     }
+    )
+    if(any(startsWith("Error",c(" ",out.text)))){
+      message(sprintf("Optimization is overly constrained. Estimates may be unstable."))
     }
+
+    names(out.list$solution) <- names(init_theta)
     
-    a <- NULL
-    b <- NULL
-    d <- NULL
     if(verbose){
-      message("Maximized log-likelihood starting from different values:")
-      for(i in seq_along(init_theta)){
-        if(!is.empty(init_theta[[i]])){
-         b <- c(b,out.list[[i]]$objective)
-         message(sprintf("start %d: log-likelihood = %s",i,
-                  format(-out.list[[i]]$objective,nsmall=5,digits=6)))
-        }else{
-         b <- c(b,NA)
-        }
-      }
-      for(i in seq_along(init_theta)){
-        if(!is.empty(init_theta[[i]])){
-          a <- cbind(a,out.list[[i]]$solution)
-        }else{
-          a <- cbind(a,NA)
-        }
-      }
-      colnames(a) <- paste0(1:length(init_theta))
-      rownames(a) <- names(init_theta[[1]])
+      message("Maximized log-likelihood:")
+      message(sprintf("log-likelihood = %s",
+               format(-out.list$objective,nsmall=5,digits=6)))
+      a <- out.list$solution
+      names(a) <- names(init_theta)
       print(a)
     }
 
-     out.hessian <- vector(length(init_theta),mode="list")
-     for(i in seq_along(init_theta)){
-      if(!is.empty(init_theta[[i]])){
-        out.hessian[[i]] <- rpm.hessian(out.list[[i]]$solution,Sd=S,Xd=X,Zd=Z,
-                 NumBeta=NumBeta, NumGamma=NumGamma,
-                 NumGammaW=NumGammaW, NumGammaM=NumGammaM,
-                 pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
-                 sampling=sampling_design, constraints=constraints,verbose=verbose)
-      }
-     }
+    out.hessian <- rpm.hessian_nog(out.list$solution,Sd=S,Xd=X,Zd=Z,
+             NumBeta=NumBeta, NumGamma=NumGamma,
+             NumGammaW=NumGammaW, NumGammaM=NumGammaM,
+             pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
+             sampling=sampling_design, constraints=constraints,verbose=verbose)
 
+    bs.results <- NULL
     if(!control$bootstrap){
-     for(i in seq_along(init_theta)){
-      if(!is.empty(init_theta[[i]])){
-       dd <- diag(out.hessian[[i]]$covar)
-       dd[dd>0] <- sqrt(dd[dd>0])
-       dd[dd<0] <- NA
-       d <- cbind(d,dd)
-      }else{
-       d <- cbind(d,NA)
-      }
-     }
-     colnames(d) <- paste0(1:length(init_theta))
-     if(verbose){ print(d) }
-
      covar.val <- function(out.hessian){
       ifelse(all(!is.na(diag(out.hessian)))&all(diag(out.hessian)>0),0.01*sum(log(diag(out.hessian))),1000000000)
      }
      llik.hessian <- function(out,out.hessian){
        ifelse(!is.null(out) & out$status >= 1 & out$status <=4 & out$objective > 0,out$objective,1000000000)
      }
-     lliks <- rep(NA,length(init_theta))
-     covars <- rep(NA,length(init_theta))
-     for(i in seq_along(init_theta)){
-       lliks[i] <- llik.hessian(out.list[[i]],out.hessian[[i]]$covar)
-       covars[i] <- covar.val(out.hessian[[i]]$covar)
-     }
-     out <- out.list[[which.min(lliks)]]
-     out$covar <- out.hessian[[which.min(lliks+covars)]]$covar
-     out$ext.covar <- out.hessian[[which.min(lliks+covars)]]$ext.covar
-     out$covar.unconstrained <- out.hessian[[which.min(lliks+covars)]]$covar.unconstrained
+     lliks <- llik.hessian(out.list,out.hessian$covar)
+     covars <- covar.val(out.hessian$covar)
+     out <- out.list
+     out$covar <- out.hessian$covar
+     out$ext.covar <- out.hessian$ext.covar
+     out$covar.unconstrained <- out.hessian$covar.unconstrained
      out$ext.covar.hessian <- out.hessian$ext.covar
      
     }else{
@@ -532,19 +452,16 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
      llik.nohessian <- function(out){
        ifelse(!is.null(out) && (out$status >= 1 & out$status <=4 & out$objective > 0),out$objective,1000000000)
      }
-     lliks <- rep(NA,length(init_theta))
-     for(i in seq_along(init_theta)){
-       lliks[i] <- llik.nohessian(out.list[[i]])
-     }
-     out <- out.list[[which.min(lliks)]]
-     out$covar <- out.hessian[[which.min(lliks)]]$covar
-     out$ext.covar <- out.hessian[[which.min(lliks)]]$ext.covar
-     out$covar.unconstrained <- out.hessian[[which.min(lliks)]]$covar.unconstrained
+     lliks <- llik.nohessian(out.list)
+     out <- out.list
+     out$covar <- out.hessian$covar
+     out$ext.covar <- out.hessian$ext.covar
+     out$covar.unconstrained <- out.hessian$covar.unconstrained
      out$ext.covar.hessian <- out.hessian$ext.covar
     }
 # end hessian covar
 
-    th_hat <- out.list[[which.min(lliks)]]$solution
+    th_hat <- out.list$solution
 
     if(inherits(out,"try-error") || any(is.na(out$solution))){
       message("MLPLE failed; restarting at different starting values.\n")
@@ -567,26 +484,23 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
 
     out$eq = eqfun(th_hat, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design,constraints)
 
-    hat_gw <- th_hat[NumBeta+NumGamma+1]
-    hat_gm <- log(1-exp(hat_gw))
-    pmf_est <- exp(augpmfnew(th_hat[1:NumBeta],
+    pmf_est <- exp(augpmfnew(beta=th_hat[1:NumBeta],
                 GammaW=th_hat[NumBeta+(1:NumGammaW)], 
                 GammaM=th_hat[(NumBeta+NumGammaW)+(1:NumGammaM)],
-                S, X, Z,
-                pmfW, pmfM, gw=hat_gw, gm=hat_gm))
+                S=S, X=X, Z=Z,
+                pmfW=pmfW, pmfM=pmfM, gw=gw, gm=gm))
     pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
-    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-    pmf_est <- pmf_est/sum(pmf_est)
 
     PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
-   #out$PMF_SW <- PMF_SW / (PMF_SW + apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
     PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE]
     out$PMF_SM <- PMF_SM / (PMF_SM + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
-   #out$PMF_SM <- PMF_SM / (PMF_SM + apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],2,sum))
     PMF_PW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_PW <- 1 - out$PMF_SW
     out$PMF_PM <- 1 - out$PMF_SM 
+
+    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
+    pmf_est <- pmf_est/sum(pmf_est)
 
     names(out$PMF_SW) <- paste0("PMF_Single.W.",cnW)
     names(out$PMF_SM) <- paste0("PMF_Single.M.",cnM)
@@ -642,18 +556,20 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out$gw <- gw
     out$gm <- gm
     out$N <- N
+    out$LB <- LB
+    out$UB <- UB
     out$sampling_design <- sampling_design
     
     if (!control$bootstrap) {
-     out$analyticalCI <- cbind(out$solution[c(1:NumBeta,ncol(out$covar))]-1.96*sqrt(diag(out$covar)[c(1:NumBeta,ncol(out$covar))]),
-                               out$solution[c(1:NumBeta,ncol(out$covar))]+1.96*sqrt(diag(out$covar)[c(1:NumBeta,ncol(out$covar))]))
+     out$analyticalCI <- cbind(out$solution[1:NumBeta]-1.96*sqrt(diag(out$covar)[1:NumBeta]),
+                               out$solution[1:NumBeta]+1.96*sqrt(diag(out$covar)[1:NumBeta]))
      colnames(out$analyticalCI) = c('LB','UB')
     }
 
     if(control$bootstrap){
      # so use the bootstrap
      # First save the hessian-based one
-     out.hessian <- rpm.hessian(th_hat,Sd=S,Xd=X,Zd=Z,
+     out.hessian <- rpm.hessian_nog(th_hat,Sd=S,Xd=X,Zd=Z,
                   NumBeta=NumBeta, NumGamma=NumGamma,
                   NumGammaW=NumGammaW, NumGammaM=NumGammaM,
                   pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
@@ -665,8 +581,6 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
 
      if(control$ncores > 1){
       doFuture::registerDoFuture()
-     #cl <- parallel::makeCluster(control$ncores, type=control$parallel.type)
-     #future::plan(cluster, workers = cl)
       if(Sys.info()[["sysname"]] == "Windows"){
         future::plan(multisession, workers=control$ncores)  ## on MS Windows
       }else{
@@ -679,9 +593,9 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       }
     }
 
-    if (control$nbootstrap<length(c(out$solution[1:NumBetaG],out$LOGODDS_SW,out$LOGODDS_SM))){
+    if (control$nbootstrap<length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM))){
       if (control$nbootstrap>0){
-        control$nbootstrap = round(length(c(out$solution[1:NumBetaG],out$LOGODDS_SW,out$LOGODDS_SM))+1/2*length(c(out$solution[1:NumBetaG],out$LOGODDS_SW,out$LOGODDS_SM)))
+        control$nbootstrap = round(length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM))+1/2*length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM)))
         cat(sprintf("nbootstrap changed to %d so that it is not too small to be meaningful.\n",control$nbootstrap))
       }else{
         control$nbootstrap = 2
@@ -689,19 +603,17 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     }
     out.boot <- matrix(0,ncol=length(out$solution),nrow=control$nbootstrap)
     out.boot.LOGODDS <- matrix(0,ncol=length(c(out$LOGODDS_SW,out$LOGODDS_SM)),nrow=control$nbootstrap)
-    out.boot_SD <- matrix(0,ncol=length(c(out$solution[1:NumBetaG],out$LOGODDS_SW,out$LOGODDS_SM)),nrow=control$nbootstrap)
-	tstar.boot <- matrix(0,ncol=NumBetaG,nrow=control$nbootstrap)
+    out.boot_SD <- matrix(0,ncol=length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM)),nrow=control$nbootstrap)
+	tstar.boot <- matrix(0,ncol=NumBeta,nrow=control$nbootstrap)
     colnames(out.boot) <- names(out$solution)
-    colnames(tstar.boot) <- names(out$solution)[c(1:NumBeta, length(out$solution))]
-
-    control$xtol_rel <- 1.0e-5
+    colnames(tstar.boot) <- names(out$solution)[1:NumBeta]
 
     if(N <= control$large.population.bootstrap){
         # Use the direct (small population) method
         # These are the categories of women
         beta_S <- out$solution[1:NumBetaS]
 
-        if(NumBetaW>0){
+        if(dim(X)[3]>0){
           beta_w <- out$solution[NumBetaS+(1:NumBetaW)]
         }else{
           beta_w <- NULL
@@ -752,9 +664,6 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
         }
   
         # adjust for outside option (remain single)
-
-        Jw <- (0.65+0.15*N/(N+50))*sqrt(num_women) # small-population adjustment to the choice. Asymptotes out to Menzell (sqrt(cN))
-        Jm <- (0.65+0.15*N/(N+50))*sqrt(num_men)   # for c = 1/(exp(gm)+exp(gw))
         Jw <- sqrt(num_men)
         Jm <- sqrt(num_women) 
     }
@@ -763,7 +672,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       if(verbose) message(sprintf("Starting parallel bootstrap using %d cores.",control$ncores))
        if(N > control$large.population.bootstrap){
         # Use the large population bootstrap
-        bout <-
+        bs.results <-
         foreach::foreach (b=1:control$nbootstrap, .packages=c('rpm')
         ) %dorng% {
         rpm.bootstrap.large(b, out$solution,
@@ -776,24 +685,25 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
                       control=control)
        }
       }else{
-        bout <-
+        bs.results <-
         foreach::foreach (b=1:control$nbootstrap, .packages=c('rpm')
         ) %dorng% {
         rpm.bootstrap.small(b, out$solution,
-           num_women=length(Ws), num_men=length(Ms), Jw=Jw, Jm=Jm, U_star=U_star, V_star=V_star, S=S, X=X, Z=Z, Ws=Ws, Ms=Ms, Xu, Zu, num_Xu, num_Zu, cnW, cnM, Xid, Zid, pair_id, sampled, sampling_design, NumBeta, NumGammaW, NumGammaM, LB, UB, control, num_sampled)
+           num_women=length(Ws), num_men=length(Ms), Jw=Jw, Jm=Jm, U_star=U_star, V_star=V_star, S=S, X=X, Z=Z, pmfW=pmfW, pmfM=pmfM, Xu, Zu, num_Xu, num_Zu, cnW, cnM, Xid, Zid, pair_id, sampled, sampling_design, NumBeta, NumGammaW, NumGammaM, LB, UB, control, num_sampled)
         }
       }
       for(i in 1:control$nbootstrap){
-        out.boot[i,] <- bout[[i]]$est
-        out.boot.LOGODDS[i,1:NumGammaW] <- bout[[i]]$LOGODDS_SW
-        out.boot.LOGODDS[i,NumGammaW+(1:NumGammaM)] <- bout[[i]]$LOGODDS_SM
+        out.boot[i,] <- bs.results[[i]]$est
+        out.boot.LOGODDS[i,1:NumGammaW] <- bs.results[[i]]$LOGODDS_SW
+        out.boot.LOGODDS[i,NumGammaW+(1:NumGammaM)] <- bs.results[[i]]$LOGODDS_SM
       }
       if(verbose) message(sprintf("Ended parallel bootstrap\n"))
     }else{
 #     Start of the non-parallel bootstrap
+      bs.results <- list()
       for(i in 1:control$nbootstrap){
         if(N > control$large.population.bootstrap){
-         out.boot_i <- rpm.bootstrap.large(1, out$solution,
+         bs.results[[i]] <- rpm.bootstrap.large(1, out$solution,
                       S=S,X=X,Z=Z,sampling_design=sampling_design,Xdata=Xdata,Zdata=Zdata,
                       sampled=sampled,
                       Xid=Xid,Zid=Zid,pair_id=pair_id,X_w=X_w,Z_w=Z_w,
@@ -802,30 +712,25 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
                       num_Xu=num_Xu,num_Zu=num_Zu,cnW=cnW,cnM=cnM,LB=LB,UB=UB,
                       control=control)
         }else{
-         out.boot_i <- rpm.bootstrap.small(1, out$solution,
-           num_women=length(Ws), num_men=length(Ms), Jw=Jw, Jm=Jm, U_star=U_star, V_star=V_star, S=S, X=X, Z=Z, Ws=Ws, Ms=Ms, Xu, Zu, num_Xu, num_Zu, cnW, cnM, Xid, Zid, pair_id, sampled, sampling_design, NumBeta, NumGammaW,NumGammaM, LB, UB, control, num_sampled)
+         bs.results[[i]] <- rpm.bootstrap.small(1, out$solution,
+           num_women=length(Ws), num_men=length(Ms), Jw=Jw, Jm=Jm, U_star=U_star, V_star=V_star, S=S, X=X, Z=Z, pmfW=pmfW, pmfM=pmfM, Xu, Zu, num_Xu, num_Zu, cnW, cnM, Xid, Zid, pair_id, sampled, sampling_design, NumBeta, NumGammaW,NumGammaM, LB, UB, control, num_sampled)
         }
-        out.boot[i,] <- out.boot_i$est
-        out.boot.LOGODDS[i,1:NumGammaW] <- out.boot_i$LOGODDS_SW
-        out.boot.LOGODDS[i,NumGammaW+(1:NumGammaM)] <- out.boot_i$LOGODDS_SM
+        out.boot[i,] <- bs.results[[i]]$est
+        out.boot.LOGODDS[i,1:NumGammaW] <- bs.results[[i]]$LOGODDS_SW
+        out.boot.LOGODDS[i,NumGammaW+(1:NumGammaM)] <- bs.results[[i]]$LOGODDS_SM
       }
     }
-   #if(control$ncores > 1){ parallel::stopCluster(cl) }
-
 #  bias-correct these
     coef.boot.bias <- apply(out.boot, 2, stats::median, na.rm=TRUE) - th_hat
-    out$coefficients <- th_hat-coef.boot.bias
 #   recompute pmf_est
-    hat_gw <- out$coefficients[NumBeta+NumGamma+1]
-    hat_gm <- log(1-exp(hat_gw))
-      pmf_est <- exp(augpmfnew(out$coefficients[1:NumBeta],
-                  GammaW=out$coefficients[NumBeta+(1:NumGammaW)], 
-                  GammaM=out$coefficients[(NumBeta+NumGammaW)+(1:NumGammaM)],
-                  S, X, Z,
-                  pmfW, pmfM, gw=hat_gw, gm=hat_gm))
+    # VIP using the uncorrected value to estimate pmf_est
+    out$coefficients <- out$solution
+    pmf_est <- exp(augpmfnew(out$coefficients[1:NumBeta],
+                GammaW=out$coefficients[NumBeta+(1:NumGammaW)], 
+                GammaM=out$coefficients[(NumBeta+NumGammaW)+(1:NumGammaM)],
+                S, X, Z,
+                pmfW, pmfM, gw=gw, gm=gm))
     pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
-    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-    pmf_est <- pmf_est/sum(pmf_est)
     PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
     PMF_SM <- pmf_est[ nrow(pmf_est),-ncol(pmf_est),drop=FALSE]
@@ -842,6 +747,11 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       out$LOGODDS_SW <- log(out$PMF_SW/(1-out$PMF_SW))
       out$LOGODDS_SM <- log(out$PMF_SM/(1-out$PMF_SM))
     }
+#
+    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
+    pmf_est <- pmf_est/sum(pmf_est)
+    out$coefficients <- th_hat-coef.boot.bias
+
     coef.boot.bias.LOGODDS <- apply(out.boot.LOGODDS, 2, stats::median, na.rm=TRUE) - th_hat[NumBeta+(1:NumGamma)]
 
     out$coefficients[NumBeta+(1:NumGammaW)] <- out$LOGODDS_SW
@@ -858,10 +768,10 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
         out$ext.covar[pos.IQR,pos.IQR] <- robust.cov$cov
       }
     }
-    out$covar <- out$ext.covar[c(1:NumBeta,ncol(out$ext.covar)),c(1:NumBeta,ncol(out$ext.covar))]
+    out$covar <- out$ext.covar[1:NumBeta,1:NumBeta]
 	
-    coef.boot <- out.boot[,c(1:NumBeta,ncol(out.boot)),drop=FALSE]
-    theta_hat <- th_hat[c(1:NumBeta,length(th_hat))]
+    coef.boot <- out.boot[,1:NumBeta,drop=FALSE]
+    theta_hat <- th_hat[1:NumBeta]
     theta_hat_SE <- apply(coef.boot, 2, stats::sd, na.rm=T)
     LB = control$alpha/2
     UB = 1-control$alpha/2
@@ -871,7 +781,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out$percent.bootCI <- cbind(theta_bootLB,theta_bootUB)
     out$theta_hat_SE <- theta_hat_SE
     out$t.bootCI <- cbind(theta_hat-1.96*theta_hat_SE, theta_hat+1.96*theta_hat_SE)
-    a <- diag(out$ext.covar.hessian)[c(1:NumBeta,length(theta_hat))]
+    a <- diag(out$ext.covar.hessian)[1:NumBeta]
     a[a<0] <- 0
     out$analyticalCI <- cbind(theta_hat-1.96*sqrt(a), theta_hat+1.96*sqrt(a))
     colnames(out$basic.bootCI) = colnames(out$percent.bootCI) = colnames(out$t.bootCI) = colnames(out$analyticalCI) = c('LB','UB')
@@ -913,6 +823,9 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out$pmfW=pmfW; out$pmfM=pmfM
     out$pmfN=pmfN
     out$pmf_est <- pmf_est
+    
+    # For GOF
+    out$bs.results <- bs.results
 
     class(out) <- "rpm"
     

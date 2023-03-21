@@ -145,7 +145,10 @@
 #' }
 #' @seealso \code{\link[=rpm-package]{rpm}} package,
 #' \code{\link{rpm}}
-#' @references Menzel, Konrad (2015).
+#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+#' \emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+#' Menzel, K. (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
 #' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 #' 

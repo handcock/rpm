@@ -23,39 +23,31 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// GS_TU
-arma::urowvec GS_TU(arma::mat U, arma::mat V);
-RcppExport SEXP _rpm_GS_TU(SEXP USEXP, SEXP VSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type U(USEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type V(VSEXP);
-    rcpp_result_gen = Rcpp::wrap(GS_TU(U, V));
-    return rcpp_result_gen;
-END_RCPP
-}
 // GSi_NTU
-arma::urowvec GSi_NTU(arma::imat U, arma::imat V);
-RcppExport SEXP _rpm_GSi_NTU(SEXP USEXP, SEXP VSEXP) {
+arma::urowvec GSi_NTU(arma::imat U, arma::imat V, int nmax);
+RcppExport SEXP _rpm_GSi_NTU(SEXP USEXP, SEXP VSEXP, SEXP nmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::imat >::type U(USEXP);
     Rcpp::traits::input_parameter< arma::imat >::type V(VSEXP);
-    rcpp_result_gen = Rcpp::wrap(GSi_NTU(U, V));
+    Rcpp::traits::input_parameter< int >::type nmax(nmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(GSi_NTU(U, V, nmax));
     return rcpp_result_gen;
 END_RCPP
 }
-// GSi_TU
-arma::urowvec GSi_TU(arma::imat U, arma::imat V);
-RcppExport SEXP _rpm_GSi_TU(SEXP USEXP, SEXP VSEXP) {
+// GSi_NTU_O
+arma::urowvec GSi_NTU_O(arma::imat U, arma::imat V, arma::imat O, arma::imat Ua, int nmax);
+RcppExport SEXP _rpm_GSi_NTU_O(SEXP USEXP, SEXP VSEXP, SEXP OSEXP, SEXP UaSEXP, SEXP nmaxSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< arma::imat >::type U(USEXP);
     Rcpp::traits::input_parameter< arma::imat >::type V(VSEXP);
-    rcpp_result_gen = Rcpp::wrap(GSi_TU(U, V));
+    Rcpp::traits::input_parameter< arma::imat >::type O(OSEXP);
+    Rcpp::traits::input_parameter< arma::imat >::type Ua(UaSEXP);
+    Rcpp::traits::input_parameter< int >::type nmax(nmaxSEXP);
+    rcpp_result_gen = Rcpp::wrap(GSi_NTU_O(U, V, O, Ua, nmax));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -221,9 +213,9 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// geqcond
-NumericMatrix geqcond(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints);
-RcppExport SEXP _rpm_geqcond(SEXP betaSEXP, SEXP GammaWSEXP, SEXP GammaMSEXP, SEXP SdSEXP, SEXP XdSEXP, SEXP ZdSEXP, SEXP SdimSEXP, SEXP XdimSEXP, SEXP ZdimSEXP, SEXP pmfWSEXP, SEXP pmfMSEXP, SEXP pmfSEXP, SEXP countsSEXP, SEXP gwSEXP, SEXP gmSEXP, SEXP constraintsSEXP) {
+// gloglik_nog
+NumericVector gloglik_nog(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints);
+RcppExport SEXP _rpm_gloglik_nog(SEXP betaSEXP, SEXP GammaWSEXP, SEXP GammaMSEXP, SEXP SdSEXP, SEXP XdSEXP, SEXP ZdSEXP, SEXP SdimSEXP, SEXP XdimSEXP, SEXP ZdimSEXP, SEXP pmfWSEXP, SEXP pmfMSEXP, SEXP pmfSEXP, SEXP countsSEXP, SEXP gwSEXP, SEXP gmSEXP, SEXP constraintsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -243,13 +235,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type gw(gwSEXP);
     Rcpp::traits::input_parameter< double >::type gm(gmSEXP);
     Rcpp::traits::input_parameter< int >::type constraints(constraintsSEXP);
-    rcpp_result_gen = Rcpp::wrap(geqcond(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints));
+    rcpp_result_gen = Rcpp::wrap(gloglik_nog(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints));
     return rcpp_result_gen;
 END_RCPP
 }
-// gloglik
-NumericVector gloglik(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints);
-RcppExport SEXP _rpm_gloglik(SEXP betaSEXP, SEXP GammaWSEXP, SEXP GammaMSEXP, SEXP SdSEXP, SEXP XdSEXP, SEXP ZdSEXP, SEXP SdimSEXP, SEXP XdimSEXP, SEXP ZdimSEXP, SEXP pmfWSEXP, SEXP pmfMSEXP, SEXP pmfSEXP, SEXP countsSEXP, SEXP gwSEXP, SEXP gmSEXP, SEXP constraintsSEXP) {
+// hloglik_nog
+NumericMatrix hloglik_nog(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints);
+RcppExport SEXP _rpm_hloglik_nog(SEXP betaSEXP, SEXP GammaWSEXP, SEXP GammaMSEXP, SEXP SdSEXP, SEXP XdSEXP, SEXP ZdSEXP, SEXP SdimSEXP, SEXP XdimSEXP, SEXP ZdimSEXP, SEXP pmfWSEXP, SEXP pmfMSEXP, SEXP pmfSEXP, SEXP countsSEXP, SEXP gwSEXP, SEXP gmSEXP, SEXP constraintsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -269,13 +261,13 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type gw(gwSEXP);
     Rcpp::traits::input_parameter< double >::type gm(gmSEXP);
     Rcpp::traits::input_parameter< int >::type constraints(constraintsSEXP);
-    rcpp_result_gen = Rcpp::wrap(gloglik(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints));
+    rcpp_result_gen = Rcpp::wrap(hloglik_nog(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints));
     return rcpp_result_gen;
 END_RCPP
 }
-// hloglik
-NumericMatrix hloglik(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints);
-RcppExport SEXP _rpm_hloglik(SEXP betaSEXP, SEXP GammaWSEXP, SEXP GammaMSEXP, SEXP SdSEXP, SEXP XdSEXP, SEXP ZdSEXP, SEXP SdimSEXP, SEXP XdimSEXP, SEXP ZdimSEXP, SEXP pmfWSEXP, SEXP pmfMSEXP, SEXP pmfSEXP, SEXP countsSEXP, SEXP gwSEXP, SEXP gmSEXP, SEXP constraintsSEXP) {
+// jeqcond_nog
+NumericMatrix jeqcond_nog(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints);
+RcppExport SEXP _rpm_jeqcond_nog(SEXP betaSEXP, SEXP GammaWSEXP, SEXP GammaMSEXP, SEXP SdSEXP, SEXP XdSEXP, SEXP ZdSEXP, SEXP SdimSEXP, SEXP XdimSEXP, SEXP ZdimSEXP, SEXP pmfWSEXP, SEXP pmfMSEXP, SEXP pmfSEXP, SEXP countsSEXP, SEXP gwSEXP, SEXP gmSEXP, SEXP constraintsSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -295,7 +287,7 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< double >::type gw(gwSEXP);
     Rcpp::traits::input_parameter< double >::type gm(gmSEXP);
     Rcpp::traits::input_parameter< int >::type constraints(constraintsSEXP);
-    rcpp_result_gen = Rcpp::wrap(hloglik(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints));
+    rcpp_result_gen = Rcpp::wrap(jeqcond_nog(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -420,9 +412,8 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_rpm_GS_NTU", (DL_FUNC) &_rpm_GS_NTU, 2},
-    {"_rpm_GS_TU", (DL_FUNC) &_rpm_GS_TU, 2},
-    {"_rpm_GSi_NTU", (DL_FUNC) &_rpm_GSi_NTU, 2},
-    {"_rpm_GSi_TU", (DL_FUNC) &_rpm_GSi_TU, 2},
+    {"_rpm_GSi_NTU", (DL_FUNC) &_rpm_GSi_NTU, 3},
+    {"_rpm_GSi_NTU_O", (DL_FUNC) &_rpm_GSi_NTU_O, 5},
     {"_rpm_PSeqcond", (DL_FUNC) &_rpm_PSeqcond, 9},
     {"_rpm_PSgeqcond", (DL_FUNC) &_rpm_PSgeqcond, 9},
     {"_rpm_PropMax", (DL_FUNC) &_rpm_PropMax, 1},
@@ -432,9 +423,9 @@ static const R_CallMethodDef CallEntries[] = {
     {"_rpm_checkstable", (DL_FUNC) &_rpm_checkstable, 4},
     {"_rpm_colMax", (DL_FUNC) &_rpm_colMax, 1},
     {"_rpm_eqcond", (DL_FUNC) &_rpm_eqcond, 16},
-    {"_rpm_geqcond", (DL_FUNC) &_rpm_geqcond, 16},
-    {"_rpm_gloglik", (DL_FUNC) &_rpm_gloglik, 16},
-    {"_rpm_hloglik", (DL_FUNC) &_rpm_hloglik, 16},
+    {"_rpm_gloglik_nog", (DL_FUNC) &_rpm_gloglik_nog, 16},
+    {"_rpm_hloglik_nog", (DL_FUNC) &_rpm_hloglik_nog, 16},
+    {"_rpm_jeqcond_nog", (DL_FUNC) &_rpm_jeqcond_nog, 16},
     {"_rpm_loglik", (DL_FUNC) &_rpm_loglik, 16},
     {"_rpm_probcounts", (DL_FUNC) &_rpm_probcounts, 10},
     {"_rpm_qloglik", (DL_FUNC) &_rpm_qloglik, 15},

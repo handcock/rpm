@@ -2,7 +2,7 @@ Package: rpm
 Type: Package
 Title: Modeling of Revealed Preferences Matchings
 Version: 0.7
-Date: 2022-12-05
+Date: 2023-03-25
 Authors@R: c(
         person("Mark S.", "Handcock", role=c("aut","cre"), email="handcock@stat.ucla.edu", comment=c(ORCID="0000-0002-9985-2785")),
         person("Ryan M. ", "Admiraal", role=c("ctb"), email="ryan.admiraal@vuw.ac.nz"),

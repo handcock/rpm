@@ -54,8 +54,8 @@
 #' @keywords models
 #' @examples
 #' library(rpm)
-#' data(fauxmatching)
 #' \donttest{
+#' data(fauxmatching)
 #' fit <- rpm(~match("edu") + WtoM_diff("edu",3),
 #'           Xdata=fauxmatching$Xdata, Zdata=fauxmatching$Zdata,
 #'           X_w="X_w", Z_w="Z_w",
@@ -63,13 +63,16 @@
 #'           sampled="sampled")
 #' a <- simulate(fit)
 #' }
-#' @references Menzel, K. (2015).
+#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
+#' \emph{Journal of the Royal Statistical Society}, A. \doi{10.18637/jss.v024.i07} 
+#' Menzel, K. (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
 #' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
 #' @name simulate.rpm
 #' @importFrom stats simulate
 #' @export
-simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=NULL, num_men=NULL, pmfW=NULL, pmfM=NULL,
+simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=NULL, num_men=NULL, pmfW=NULL, pmfM=NULL, 
                          large.population=TRUE, num_sampled = NULL, bootstrap=FALSE, sampling_design=NULL,
                          control=control.rpm(), verbose = FALSE) 
 {
@@ -197,16 +200,18 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
 
       if(control$ncores > 1){
         doFuture::registerDoFuture()
-       #cl <- parallel::makeCluster(control$ncores)
-       #future::plan(cluster, workers = cl)
         if(Sys.info()[["sysname"]] == "Windows"){
           future::plan(multisession, workers=control$ncores)  ## on MS Windows
         }else{
           future::plan(multisession, workers=control$ncores)     ## on Linux, Solaris, and macOS
         }
         ### initialize parallel random number streams
-        if (!is.null(control$seed)) {
-          doRNG::registerDoRNG(control$seed)
+        if (!is.null(seed) | !is.null(control$seed)) {
+          if(!is.null(seed)){
+            doRNG::registerDoRNG(seed)
+          }else{
+            doRNG::registerDoRNG(control$seed)
+          }
         }
       }
 
@@ -230,7 +235,12 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
         }else{
           if(!bootstrap){
-            pmf_target <- object$pmf_est
+           #pmf_target <- object$pmf_est
+            pmf_target <- exp(augpmfnew(beta=object$coefficients[1:object$NumBeta],
+                  GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
+                  GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
+                  S=object$Sd, X=object$Xd, Z=object$Zd,
+                  pmfW=object$pmfW_N/sum(object$pmfW_N), pmfM=object$pmfM_N/sum(object$pmfM_N), gw=gw, gm=gm))
           }else{
             pmf_target <- object$pmf
           }
@@ -306,9 +316,12 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           }
           Z_w_rel[single_and_sampled_M] <- w_rel
           Z_w_new[single_and_sampled_M] <- w
+#
          object$Xdata[,object$X_w] <- X_w_new
          object$Zdata[,object$Z_w] <- Z_w_new
+#        Do the actual sampling
         }
+# Old approach
         if(object$sampling_design %in% c("stock-stock", "census")){
           paired_W <- !is.na(object$Xdata[,object$pair_id]) 
           paired_M <- !is.na(object$Zdata[,object$pair_id])
@@ -327,40 +340,10 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           object$Zdata[paired_M,object$sampled] <- FALSE
           object$Zdata[M_paired_to_sampled_W,object$sampled][!I] <- TRUE
         }
-        if(FALSE & sampling_design %in% c("stock-flow")){
-          paired_W <- !is.na(object$Xdata[,object$pair_id])
-          paired_M <- !is.na(object$Zdata[,object$pair_id])
-          M_paired_to_W <- match(object$Xdata[paired_W,object$pair_id], object$Zdata[,object$Zid])
-          I <- sample(rep(c(TRUE,FALSE)), size=sum(paired_M), replace=TRUE)
-          a <- X_w_rel
-          a[paired_W] <- 0.0
-          a[paired_W][ I] <- X_w_rel[paired_W][ I]+Z_w_rel[M_paired_to_W][ I]
-          object$Xdata[paired_W,object$sampled] <- FALSE
-          object$Xdata[paired_W,object$sampled][ I] <- TRUE
-          a_new <- X_w_new
-          a_new[paired_W] <- 0.0
-          a_new[paired_W][ I] <- ifelse(object$Xdata[paired_W,object$sampled][ I],X_w_new[paired_W][ I],Z_w_new[M_paired_to_W][ I])
-          a_new[paired_W][ I] <- X_w_new[paired_W][ I]+Z_w_new[M_paired_to_W][ I]
-          X_w_new <- a_new
-          b <- Z_w_rel
-          b[M_paired_to_W] <- 0.0
-          b[M_paired_to_W][!I] <- X_w_rel[paired_W][!I] + Z_w_rel[M_paired_to_W][!I]
-          object$Zdata[M_paired_to_W,object$sampled] <- FALSE
-          object$Zdata[M_paired_to_W,object$sampled][!I] <- TRUE
-          b_new <- Z_w_new
-          b_new[M_paired_to_W] <- 0.0
-          b_new[M_paired_to_W][!I] <- ifelse(object$Zdata[M_paired_to_W,object$sampled][!I],Z_w_new[M_paired_to_W][!I],X_w_new[paired_W][!I])
-          b_new[M_paired_to_W][!I] <- X_w_new[paired_W][!I] + Z_w_new[M_paired_to_W][!I]
-          Z_w_new <- b_new
-#
-          Z_w_rel <- b
-          X_w_rel <- a
-        }
   object$Xdata[,"X_w_rel"] <- X_w_new
   object$Zdata[,"Z_w_rel"] <- Z_w_new
 
         rpm.simulate.large.population.worker <- function(pmf_target, object, X_w_rel, Z_w_rel, num_sampled, num_women, num_men,numX,numZ){
-
           cts <- -pmf_target
           ntries <- 0
           while( any(cts < -0.000000001) & ntries < 1000){
@@ -602,7 +585,6 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
             ) %dorng% {
             rpm.simulate.large.population.worker(pmf_target, object, X_w_rel, Z_w_rel, num_sampled, num_women, num_men,numX,numZ)
             }
-         #if(exists("cl")) parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){
@@ -668,8 +650,9 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
         Jw <- sqrt(num_men)
         Jm <- sqrt(num_women)
 
-        rpm.simulate.small.population.worker <- function(i, num_women, num_men, Jw, Jm, U_star, V_star, Ws, Ms, Xid, Zid, Xu, Zu,
-            X_w,Z_w,pair_id, sampling_design){
+        rpm.simulate.small.population.worker <- function(i, num_women, num_men, Jw, Jm,
+            U_star, V_star, Ws, Ms, Xid, Zid, Xu, Zu,
+            X_w, Z_w, pair_id, sampling_design){
           eta  <- -log(-log(matrix(stats::runif(num_women * num_men), nrow=num_women)))
           zeta <- -log(-log(matrix(stats::runif(num_women * num_men), nrow=num_men)))
   
@@ -770,9 +753,8 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
           out.list <-
             foreach::foreach (i=1:nsim, .packages=c('rpm')
             ) %dorng% {
-            rpm.simulate.small.population.worker(i, length(Ws), length(Ms), Jw, Jm, U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$Xu,  object$Zu, object$X_w, object$Z_w, object$pair_id, sampling_design)
+            rpm.simulate.small.population.worker(i, length(Ws), length(Ms), Jw, Jm, U_star, V_star, Ws, Ms, object$Xid, object$Zid, object$Xu, object$Zu, object$X_w, object$Z_w, object$pair_id, sampling_design)
             }
-         #if(exists("cl")) parallel::stopCluster(cl)
         }else{
           out.list <- vector(nsim, mode="list")
           for( i in 1:nsim ){
