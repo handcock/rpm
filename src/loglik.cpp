@@ -44,7 +44,7 @@ double loglik(NumericVector beta, NumericVector GammaW, NumericVector GammaM, Nu
   for (k = 0; k < NumGammaM; ++k) {
     llik += counts(NumGammaW,k)*(GammaM(k) + gm + log(pmfM(k)) - log(1.0+exp(GammaM(k))));
   }
-  if(std::isnan(llik) | !std::isfinite(llik)){
+  if(std::isnan(llik) || !std::isfinite(llik)){
     llik= 10000.0;
   }
   return llik;

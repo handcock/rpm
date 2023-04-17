@@ -72,7 +72,7 @@ arma::mat PSgeqcond(arma::vec beta, arma::vec Gamma, arma::cube S, arma::cube X,
   }
   for (l = 0; l < NumGamma; ++l) {
    for (i = 0; i < NumGamma; ++i) {
-    if(std::isnan(gf(l,i)) | !std::isfinite(gf(l,i))){gf(l,i) = 100.0;}
+    if(std::isnan(gf(l,i)) || !std::isfinite(gf(l,i))){gf(l,i) = 100.0;}
    }
   }
   return gf;

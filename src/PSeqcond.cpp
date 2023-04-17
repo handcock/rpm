@@ -68,7 +68,7 @@ arma::vec PSeqcond(arma::vec beta, arma::vec Gamma, arma::cube S, arma::cube X, 
    pfp(k+NumGammaW)=pfps-(exp(-GammaM(k)));
   }
   for (k = 0; k < NumGamma; ++k) {
-   if(std::isnan(pfp(k)) | !std::isfinite(pfp(k))){pfp(k) = -10.0;}
+   if(std::isnan(pfp(k)) || !std::isfinite(pfp(k))){pfp(k) = -10.0;}
   }
   return pfp;
 }

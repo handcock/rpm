@@ -70,6 +70,6 @@ See the following papers for more information and examples:
 
 #### Statistical Methodology
 
-* Goyal, Shuchi, Handcock, Mark S., Jackson, Heide M., Rendall, Michael S., Yeung, Fiona C. (2022) [A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation](https://doi.org/10.1214/14-ejs923), *Journal of the Royal Statistical Society*, A.
+* Goyal, Shuchi, Handcock, Mark S., Jackson, Heide M., Rendall, Michael S., Yeung, Fiona C. (2022) [A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation](https://doi.org/10.1093/jrsssa/qnad031), *Journal of the Royal Statistical Society*, A.
 * Dagsvik, John K. (2000) [Aggregation in Matching Markets](https://doi.org/10.1111/1468-2354.00054) JSTOR: https://www.jstor.org/stable/2648822, *International Economic review*, Vol. 41, 27-57.
 * Menzel, Konrad (2015) [Large Matching Markets as Two-Sided Demand Systems](https://doi.org/10.3982/ECTA12299), *Econometrica*, Vol. 83, No. 3 (May, 2015), 897-941.
