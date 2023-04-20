@@ -14,7 +14,7 @@ individuals for such people.
 We develop a large-population likelihood framework to estimate
 preference parameters based on sample survey data on partnerships and population
 composition. The framework was originally due to Dagsvik (2000) and Menzel (2015).
-Based on simulation studies conducted in Goyal, Handcock, Jackson, Rendall and Yeung (2022),
+Based on simulation studies conducted in Goyal, Handcock, Jackson, Rendall and Yeung (2023),
 for realistic population sizes, the model recovers preference parameters that are
 invariant under different population availabilities.  The software uses bootstrap methods to bias
 correct parameter estimates for small population sizes and produce conﬁdence intervals 
