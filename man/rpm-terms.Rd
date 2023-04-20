@@ -23,6 +23,9 @@
 \alias{diff}
 \alias{mix}
 \title{Terms used in a Revealed Preference Matchings Model}
+\value{
+No return value, called for side effects.
+}
 \description{
 The function \code{\link{rpm}} is used to fit a revealed preference model
 for men and women of certain

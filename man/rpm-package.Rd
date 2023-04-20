@@ -4,6 +4,9 @@
 \name{rpm-package}
 \alias{rpm-package}
 \title{Modeling of Revealed Preferences Matchings}
+\value{
+No return value, called for side effects.
+}
 \description{
 An integrated set of tools to fit a revealed preference model
 for men and women of certain
@@ -12,7 +15,7 @@ The model assumes a one-to-one stable matching using an observed set of
 matchings and a set of (possibly dyadic) covariates to 
 estimate the parameters for
 linear equations of utilities.
-It does this using a large-population likelihood based on ideas from Menzel (2015).
+It does this using an large-population likelihood based on ideas from Dagsvik (2000), Menzel (2015) and Goyal et al (2023).
 }
 \details{
 For a complete list of the functions, use \code{library(help="rpm")} or
@@ -53,12 +56,14 @@ help("rpm-terms")
 
 }
 \references{
-Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+Goyal, Shuchi; Handcock, Mark S.; Jackson, Heide M.; Rendall, Michael S. and Yeung, Fiona C. (2023).
 \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
-Menzel, K. (2015).
+Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
+JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
+Menzel, Konrad (2015).
 \emph{Large Matching Markets as Two-Sided Demand Systems}
-Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
+Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 }
 \author{
 Mark S. Handcock <handcock@stat.ucla.edu>

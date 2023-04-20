@@ -10,7 +10,7 @@
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using a large-population likelihood based on ideas from Menzel (2015).
+#' It does this using an large-population likelihood based on ideas from Dagsvik (2000), Menzel (2015) and Goyal et al (2023).
 #' 
 #' The model represents the dyadic utility functions as deterministic linear utility functions of
 #' dyadic variables. These utility functions are functions of observed characteristics of the women
@@ -50,7 +50,7 @@
 #' @param control A list of control parameters for algorithm tuning. Constructed using
 #' \code{\link{control.rpm}}, which should be consulted for specifics. 
 #' @param verbose  logical; Should verbose messages be printed out.
-#' @return A list of data.frame, each a simulation from the the population. 
+#' @return A list of data.frame, each a simulation from the population. 
 #' @keywords models
 #' @examples
 #' library(rpm)
@@ -63,12 +63,14 @@
 #'           sampled="sampled")
 #' a <- simulate(fit)
 #' }
-#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' @references Goyal, Shuchi; Handcock, Mark S.; Jackson, Heide M.; Rendall, Michael S. and Yeung, Fiona C. (2023).
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
-#' Menzel, K. (2015).
+#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
+#' JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
+#' Menzel, Konrad (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
-#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
+#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 #' @name simulate.rpm
 #' @importFrom stats simulate
 #' @export

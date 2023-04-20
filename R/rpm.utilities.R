@@ -98,3 +98,26 @@ rpm.hessian_nog <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,
 
   list(covar=covar,ext.covar=ext.covar,covar.unconstrained=Hi)
 }
+
+#' [`print`] objects to the [`message`] output.
+#'
+#' A thin wrapper around [`print`] that captures its output and prints
+#' it as a [`message`], usually to STDERR.
+#' Tis is part of [`statnet.common`].
+#'
+#' @param ... arguments to [`print`].
+#' @param messageArgs a list of arguments to be passed directly to [`message`].
+#'
+#' @examples
+#' cat(1:5)
+#' 
+#' print(1:5)
+#' message_print(1:5) # Looks the same (though may be in a different color on some frontends).
+#' 
+#' suppressMessages(print(1:5)) # Still prints
+#' suppressMessages(message_print(1:5)) # Silenced
+#' @export
+message_print <- function(..., messageArgs=NULL){
+  #' @importFrom utils capture.output
+  do.call(message, c(list(paste(capture.output(print(...)),collapse="\n")), messageArgs))
+}

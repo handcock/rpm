@@ -174,27 +174,29 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     if(!all(W_paired_to_M)){
       message("The women's data, Xdata, contains people with pair IDs that do not appear in the men's data, Zdata. These are:")
       a <- Xdata[!is.na(Xdata[,pair_id]),][!W_paired_to_M,]
-      print(a)
+      message_print(a)
       message("Please correct this before rerunning.")
     }
 
     if(!all(M_paired_to_W)){
       message("The men's data, Zdata, contains people with pair IDs that do not appear in the women's data, Xdata. These are:")
       a <- Zdata[!is.na(Zdata[,pair_id]),][!M_paired_to_W,]
-      print(a)
+      message_print(a)
       message("Please correct this before rerunning.")
     }
 
     if(!is.empty(W_duplicated_pair_id)){
       message("The women's data, Xdata, contains duplicated pair IDs. These are:")
       a <- Xdata[!is.na(Xdata[,pair_id]),][W_pair_id %in% W_duplicated_pair_id,]
-      print(a[order(a[,pair_id]),])
+      a <- a[order(a[,pair_id]),]
+      message_print(a)
       message("Please correct this before reruning.")
     }
     if(!is.empty(M_duplicated_pair_id)){
       message("The men's data, Zdata, contains duplicated pair IDs. These are:")
       a <- Zdata[!is.na(Zdata[,pair_id]),][M_pair_id %in% M_duplicated_pair_id,]
-      print(a[order(a[,pair_id]),])
+      a <- a[order(a[,pair_id]),]
+      message_print(a)
       message("Please correct this before reruning.")
     }
     if(!is.empty(W_duplicated_pair_id) | !is.empty(M_duplicated_pair_id) | !all(W_paired_to_M) | !all(M_paired_to_W)){
@@ -229,13 +231,13 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     W_matched_vars <- model_vars %in% colnames(Xdata)    
     if(!all(W_matched_vars)){
       message("Some of the variables in the formula do not appear in the women's data, Xdata. These are:")
-      print(model_vars[!W_matched_vars])
+      message(model_vars[!W_matched_vars])
       message("Please correct this before reruning.")
     }
     M_matched_vars <- model_vars %in% colnames(Zdata)    
     if(!all(M_matched_vars)){
       message("Some of the variables in the formula do not appear in the men's data, Zdata. These are:")
-      print(model_vars[!M_matched_vars])
+      message(model_vars[!M_matched_vars])
       message("Please correct this before reruning.")
     }
     if(!all(W_matched_vars) | !all(W_matched_vars)){
@@ -360,7 +362,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     names(init_theta) <- c(nstr, paste0("LOD_Single.W.",cnW), paste0("LOD_Single.M.",cnM))
     if(verbose){
       message("Initial estimate set to:")
-      print(init_theta)
+      message_print(init_theta)
     }
 
     # core algorithm begins
@@ -422,7 +424,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
                format(-out.list$objective,nsmall=5,digits=6)))
       a <- out.list$solution
       names(a) <- names(init_theta)
-      print(a)
+      message_print(a)
     }
 
     out.hessian <- rpm.hessian_nog(out.list$solution,Sd=S,Xd=X,Zd=Z,
@@ -474,8 +476,9 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out$exitflag <- out$status
     if(verbose){ 
       message("eq values:")
-      print((eqfun(th_hat, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design,constraints)))
-      print(round(th_hat,2))
+      a <- eqfun(th_hat, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design,constraints)
+      message(a)
+      message(round(th_hat,2))
     }
         
     if(is.nan(out$loglik) | is.infinite(out$loglik)){
@@ -596,7 +599,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     if (control$nbootstrap<length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM))){
       if (control$nbootstrap>0){
         control$nbootstrap = round(length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM))+1/2*length(c(out$solution[1:NumBeta],out$LOGODDS_SW,out$LOGODDS_SM)))
-        cat(sprintf("nbootstrap changed to %d so that it is not too small to be meaningful.\n",control$nbootstrap))
+        message(sprintf("nbootstrap changed to %d so that it is not too small to be meaningful.\n",control$nbootstrap))
       }else{
         control$nbootstrap = 2
       }
@@ -764,7 +767,8 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
         robust.cov <- try(MASS::cov.mcd(out.boot[,pos.IQR])),
        type="message")
       if(!any(startsWith(out.text,"Error in solve")) & !inherits(robust.cov,"try-error")){
-        print(cbind(sqrt(diag(out$ext.covar[pos.IQR,pos.IQR])),sqrt(diag(robust.cov$cov))))
+        a <- cbind(sqrt(diag(out$ext.covar[pos.IQR,pos.IQR])),sqrt(diag(robust.cov$cov)))
+        message_print(a)
         out$ext.covar[pos.IQR,pos.IQR] <- robust.cov$cov
       }
     }

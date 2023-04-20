@@ -46,9 +46,6 @@
 #'   [base::summary()]. Function [stats::coef()] will extract the data frame of
 #'   coefficients with standard errors, t-statistics and p-values.
 #'
-#'
-#'
-#'
 #' @keywords regression models
 #' @examples
 #' library(rpm)

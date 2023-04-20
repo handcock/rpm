@@ -69,7 +69,7 @@
 #'           pair_w="pair_w", pair_id="pair_id", Xid="pid", Zid="pid",
 #'           sampled="sampled")
 #' a <- gof(fit)
-#'}
+#' }
 #' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
@@ -93,7 +93,7 @@ gof.default <- function(object,...) {
 #' @describeIn gof Calculate goodness-of-fit statistics for Revealed Preference Matchings Model based on observed data
 #' @export
 gof.rpm <- function(object, ...,
-                    empirical_p = FALSE,
+                    empirical_p = TRUE,
                     compare_sim = 'sim-est',
                     control = object$control,
                     reboot = FALSE,
@@ -108,7 +108,6 @@ gof.rpm <- function(object, ...,
   out$model_pmf <- object$pmf_est
   out$observed_pmf <- object$pmf
   
-  #out$compare_sim <- match.arg(compare_sim, c("sim-est","mod-est"))
   out$compare_sim <- "sim-est"
   
   # Observed Hellinger divergence
@@ -122,8 +121,6 @@ gof.rpm <- function(object, ...,
   # Observed chi-square statistic
   compute_chi_sq <- function(N,observed,expected) {
     csc <- N*(observed-expected)^2/(expected+0.5/N)
-   #csc[observed<1e-10] <- 0
-   #csc[expected<1e-10] <- 0
     csc[nrow(observed),ncol(observed)] = 0
     return(csc)
   }
@@ -133,7 +130,6 @@ gof.rpm <- function(object, ...,
   # Observed KL divergence
   compute_kl <- function(N,observed, expected) {
     klc <- -(observed+0.5/N)*log((expected+0.5/N)/(observed+0.5/N))
-   #klc[observed<1e-10] <- 0
     klc[nrow(observed),ncol(observed)] = 0
     klc[is.na(klc)|is.nan(klc)] <- 0
     return(klc)
@@ -435,9 +431,9 @@ gof.rpm <- function(object, ...,
 #' @method print gofrpm
 #' @export
 print.gofrpm <- function(x, ...){
-  print( mean(x$hellinger_sim >= x$obs_hellinger, na.rm=TRUE) )
-  print( mean(x$chi_sq_sim >= x$obs_chi_sq, na.rm=TRUE) )
-  print( mean(x$kl_sim >= x$obs_kl, na.rm=TRUE) )
+  message(sprintf("Hellinger goodness-of-fit p-value: %f", x$empirical_p_hellinger ))
+  message(sprintf("Chi-Squared goodness-of-fit p-value: %f", x$empirical_p_chi_sq ))
+  message(sprintf("Kullback-Liebler goodness-of-fit p-value: %f", x$empirical_p_kl ))
   invisible()
 }
 
@@ -488,18 +484,18 @@ plot.gofrpm <- function(x, ...,
                         main="Goodness-of-fit diagnostics"
 ) {
   
-  hist(x$chi_sq_sim, xlim=range(c(x$chi_sq_sim,x$obs_chi_sq),finite=TRUE),
+  hist(x$chi_sq_simulated, xlim=range(c(x$chi_sq_simulated,x$obs_chi_sq),finite=TRUE),
        probability=TRUE,
        main=expression(paste("Distribution of simulated ",chi^2)),
        xlab=expression(chi^2),nclass=20)
-  lines(stats::density(x$chi_sq_sim),col=3)
+  lines(stats::density(x$chi_sq_simulated),col=3)
   abline(v=x$obs_chi_sq, col=2)
   
-  hist(x$kl_sim, xlim=range(c(x$kl_sim,x$obs_kl),finite=TRUE),
+  hist(x$kl_simulated, xlim=range(c(x$kl_sim,x$obs_kl),finite=TRUE),
        probability=TRUE,
        main=expression(paste("Distribution of simulated ",KL)),
        xlab=expression(KL),nclass=20)
-  lines(stats::density(x$kl_sim),col=3)
+  lines(stats::density(x$kl_simulated),col=3)
   abline(v=x$obs_kl, col=2)
   
   y <- x$chi_sq_cell_mean
@@ -516,7 +512,7 @@ plot.gofrpm <- function(x, ...,
     ylab(label= "Man's type")+
     ggtitle("Mean chi-square contribution by cell") +
     scale_fill_gradient(low = "#FFFFFF", high = "#100FCE",na.value = '#000000')
-  print(chiHeat)
+  plot(chiHeat)
   
   y <- x$kl_cell_mean
   y[nrow(y),ncol(y)] <- NA
@@ -535,6 +531,6 @@ plot.gofrpm <- function(x, ...,
                          mid = "#FFFFFF",
                          high = "#100FCE", midpoint = 0,
                          na.value='#000000')
-  print(klHeat)
+  plot(klHeat)
   
 }

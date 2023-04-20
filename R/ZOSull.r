@@ -47,8 +47,7 @@
    L <- cbind(UX,LZ)
    stabCheck <- t(crossprod(L,t(crossprod(L,Omega))))
    if (sum(stabCheck^2) > 1.0001*(numIntKnots+2))
-       print("WARNING: NUMERICAL INSTABILITY ARISING\\
-              FROM SPECTRAL DECOMPOSITION")
+       warning("Numerical instability arising from spectral decomposition")
 
    # Obtain B and post-multiply by LZ matrix to get Z.
 

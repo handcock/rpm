@@ -12,7 +12,7 @@ gof(object, ...)
 \method{gof}{rpm}(
   object,
   ...,
-  empirical_p = FALSE,
+  empirical_p = TRUE,
   compare_sim = "sim-est",
   control = object$control,
   reboot = FALSE,

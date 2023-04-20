@@ -21,6 +21,9 @@
 \alias{stablearma}
 \alias{loglikfun_nog}
 \title{Internal rpm Objects}
+\value{
+No return value, called for side effects.
+}
 \description{
 Internal \code{\link[=rpm-package]{rpm}} functions.
 }

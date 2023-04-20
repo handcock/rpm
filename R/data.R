@@ -26,6 +26,7 @@
 #' \item{sampled}{ The indicator that the person was sampled directly (as distinct from being included as the match of a directly sampled
 #' person. All single people are directly sampled.  This is in both \code{Xdata} and \code{Zdata}.}
 #' }
+#' @return No return value, called for side effects.
 #' @details The pairings are determined by the \code{pair_id} variable in \code{Xdata}. 
 #' If that variable is NA then the women is
 #' assumed to be single. If men are listed in \code{Zdata} and are not partnered then they are assumed single.

@@ -25,6 +25,9 @@ the 2008 SIPP.
 \usage{
 data(fauxmatching)
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 This data set represents a simulation of a bipartite matching.
 The data set is named fauxmatching.

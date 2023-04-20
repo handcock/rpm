@@ -33,7 +33,7 @@ This should be compatible with the type in the object.}
 \item{verbose}{logical; Should verbose messages be printed out.}
 }
 \value{
-A list of data.frame, each a simulation from the the population.
+A list of data.frame, each a simulation from the population.
 }
 \description{
 \code{\link{rpmpopulationpmf}} computes the probability mass function for a population of the pairs and singles

@@ -29,7 +29,7 @@
 #' @param pmfM vector; (Optional) The population proportions of the numbers of men of each type. 
 #' This should be compatible with the type in the object.
 #' @param verbose  logical; Should verbose messages be printed out.
-#' @return A list of data.frame, each a simulation from the the population. 
+#' @return A list of data.frame, each a simulation from the population. 
 #' @keywords models
 #' @examples
 #' library(rpm)

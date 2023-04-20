@@ -245,17 +245,17 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
     if(verbose){
       message(sprintf("Population size: %f",N))
       message(sprintf("Matrix of sample counts:"))
-      print(counts)
+      message_print(counts)
       message(sprintf("Matrix of population counts:"))
-      print(pmfN)
+      message_print(pmfN)
     }
     if(verbose){
       message(sprintf("Population proportions of women by category:"))
-      print(pmfW)
+      message_print(pmfW)
       message(sprintf("Population proportions of men by category:"))
-      print(pmfM)
+      message_print(pmfM)
       message(sprintf("Matrix of population households proportions of women x men by category:"))
-      print(pmf)
+      message_print(pmf)
     }
    
     list(pmf=pmf, counts=counts, pmfW=pmfW, pmfM=pmfM, pmfN=pmfN, N=N, gw=gw, gm=gm,

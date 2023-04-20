@@ -143,6 +143,7 @@
 #'  dyads in a group. 
 #'   }
 #' }
+#' @return No return value, called for side effects.
 #' @seealso \code{\link[=rpm-package]{rpm}} package,
 #' \code{\link{rpm}}
 #' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
