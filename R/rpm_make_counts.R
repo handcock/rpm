@@ -2,14 +2,18 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
 
     num_Xu <- nrow(Xu)
     num_Zu <- nrow(Zu)
-    cnW <- paste(colnames(Xu)[2],Xu[,2], sep=".")
-    for(i in 2:ncol(Xu)){
+    if(ncol(Xu)>1){
+     cnW <- paste(colnames(Xu)[2],Xu[,2], sep=".")
+     for(i in 2:ncol(Xu)){
       cnW <- paste(cnW,paste(colnames(Xu)[i],Xu[,i], sep="."),sep='.')
-    }
-    cnM <- paste(colnames(Zu)[2],Zu[,2], sep=".")
-    for(i in 2:ncol(Zu)){
+     }
+    }else{ cnW <- "Int" }
+    if(ncol(Zu)>1){
+     cnM <- paste(colnames(Zu)[2],Zu[,2], sep=".")
+     for(i in 2:ncol(Zu)){
       cnM <- paste(cnM,paste(colnames(Zu)[i],Zu[,i], sep="."),sep='.')
-    }
+     }
+    }else{ cnM <- "Int" }
 
     if(sampling_design == "stock-stock"){
     # IDs of the women matched to the sampled men (and vice versa)
@@ -73,19 +77,20 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
     }
 
     if (sampling_design == "stock-stock") {
+     x_wts <- Xdata[,X_w] * Xdata[,sampled]
+     z_wts <- Zdata[,Z_w] * Zdata[,sampled]
      subset=Xdata[,sampled] &  is.na(Xdata[,pair_id])
      pmfW_S = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
      subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
-     pmfW_P = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
+     x_wts[subset] <- 0.5*x_wts[subset]
+     pmfW_P = 0.5*as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
      pmfW = pmfW_S + pmfW_P
      subset=Zdata[,sampled] &  is.na(Zdata[,pair_id])
      pmfM_S = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
      subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
-     pmfM_P = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
+     z_wts[subset] <- 0.5*z_wts[subset]
+     pmfM_P = 0.5*as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
      pmfM = pmfM_S + pmfM_P
-#   
-     x_wts <- Xdata[,X_w] * Xdata[,sampled]
-     z_wts <- Zdata[,Z_w] * Zdata[,sampled]
     }
     if (sampling_design == "stock-flow") {
      pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
@@ -108,8 +113,8 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
     }
     pmfW = pmfW/sum(pmfW)
     pmfM = pmfM/sum(pmfM)
-    names(pmfW) <- paste(colnames(Xu)[2],Xu[,2], sep=".") 
-    names(pmfM) <- paste(colnames(Zu)[2],Zu[,2], sep=".")
+    names(pmfW) <- cnW
+    names(pmfM) <- cnM
 
     if(verbose){
      message(sprintf("Proportion population paired size: %f",sum(Zdata[paired_and_sampled_M,Z_w])/n))
@@ -260,6 +265,6 @@ rpm_make_counts <- function(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pa
    
     list(pmf=pmf, counts=counts, pmfW=pmfW, pmfM=pmfM, pmfN=pmfN, N=N, gw=gw, gm=gm,
          num_women=num_women, num_men=num_men, num_sampled=num_sampled,
-         x_wts =x_wts, z_wts=z_wts
+         x_wts=x_wts, z_wts=z_wts
         )
 }

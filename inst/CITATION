@@ -41,7 +41,7 @@ HPMRG.cite.pkg <- function(pkg){
          year         = substr(meta$Date,1,4),
          note         = paste("R package version ", meta$Version, sep=""),
          address      = "Los Angeles, CA",
-         url          = "https://CRAN.R-project.org/package=RDS",
+         url          = "https://CRAN.R-project.org/package=rpm",
          textVersion = 
          paste("Mark S. Handcock, Ryan M. Admiraal, Fiona C. Yeung, Heide M. Jackson, Michael S. Rendall, Shuchi Goyal (2023)", 
                paste(meta$Package,": ", meta$Title, sep=""),

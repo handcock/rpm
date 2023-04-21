@@ -49,11 +49,11 @@
 #' assumed to be single. If men are listed in \code{Zdata} and are not partnered then they are assumed single.
 #' Weights are specified by three optional variables in \code{Xdata}.
 #' \itemize{
-#' \item{X_w}{This is character string of the name of the weight variable for women. The sum of the weights should be the
+#' \item{X_w}{: This is character string of the name of the weight variable for women. The sum of the weights should be the
 #' number of women in the population.}
-#' \item{Z_w}{This is character string of the name of the weight variable for men. The sum of the weights should be the
+#' \item{Z_w}{: This is character string of the name of the weight variable for men. The sum of the weights should be the
 #' number of men in the population.}
-#' \item{pair_w}{This is character string of the name of the weight variable for pairs.}
+#' \item{pair_w}{: This is character string of the name of the weight variable for pairs.}
 #' }
 #' @return \code{\link{summary}} returns a list with many components, like \code{\link{rpm}} object without the model estimates. In particular it includes \code{stats} and \code{popstats}.
 #' \code{stats} is the named vector of sample statistics from the model. 
@@ -61,12 +61,18 @@
 #' It alos includes \code{counts} and \code{pmf}. Each of these is a contingency table in array
 #' representation of S3 class \code{c("xtabs", "table")}, with a \code{"call"}
 #' @seealso control.rpm, summary.rpm, rpm
-#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' @references
+#'
+#' Goyal, Shuchi; Handcock, Mark S.; Jackson, Heide M.; Rendall, Michael S. and Yeung, Fiona C. (2023).
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
-#' Menzel, K. (2015).
+#'
+#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
+#' JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
+#'
+#' Menzel, Konrad (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
-#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
+#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 #' @keywords models
 #' @examples
 #' library(rpm)

@@ -11,6 +11,9 @@ message_print(..., messageArgs = NULL)
 
 \item{messageArgs}{a list of arguments to be passed directly to [`message`].}
 }
+\value{
+No return value, called for side effects.
+}
 \description{
 A thin wrapper around [`print`] that captures its output and prints
 it as a [`message`], usually to STDERR.

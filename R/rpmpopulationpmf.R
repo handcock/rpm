@@ -11,7 +11,7 @@
 #' matchings and a set of (possibly dyadic) covariates to 
 #' estimate the parameters for
 #' linear equations of utilities.
-#' It does this using a large-population likelihood based on ideas from Menzel (2015).
+#' It does this using an large-population likelihood based on ideas from Dagsvik (2000), Menzel (2015) and Goyal et al (2023).
 #' 
 #' The model represents the dyadic utility functions as deterministic linear utility functions of
 #' dyadic variables. These utility functions are functions of observed characteristics of the women
@@ -42,16 +42,22 @@
 #'           sampled="sampled")
 #' a <- rpmpopulationpmf(fit)
 #' }
-#' @references Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+#' @references
+#'
+#' Goyal, Shuchi; Handcock, Mark S.; Jackson, Heide M.; Rendall, Michael S. and Yeung, Fiona C. (2023).
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
-#' Menzel, K. (2015).
+#'
+#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
+#' JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
+#'
+#' Menzel, Konrad (2015).
 #' \emph{Large Matching Markets as Two-Sided Demand Systems}
-#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
+#' Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 #' @export rpmpopulationpmf
 rpmpopulationpmf <- function(object, N = 2000, num_women=NULL, num_men=NULL, pmfW=NULL, pmfM=NULL, verbose = FALSE) 
 {
-      if(!("rpm" %in% class(object))){stop("'rpmpopulationpmf' only works on objects of class 'rpm'.")}
+      if(!(is(object, "rpm"))){stop("'rpmpopulationpmf' only works on objects of class 'rpm'.")}
 
       if (object$sampling_design != "census") {
        # Presumes individual weights
@@ -122,13 +128,11 @@ rpmpopulationpmf <- function(object, N = 2000, num_women=NULL, num_men=NULL, pmf
       NumGammaM <- object$NumGammaM
       th_hat <- object$coefficients
 
-      hat_gw <- object$coefficients[object$NumBeta+object$NumGammaW+object$NumGammaM+1]
-      hat_gm <- log(1-exp(hat_gw))
       pmf_target <- exp(augpmfnew(object$coefficients[1:object$NumBeta],
             GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
             GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
             object$Sd, object$Xd, object$Zd,
-            pmfWN/sum(pmfWN), pmfMN/sum(pmfMN), gw=hat_gw, gm=hat_gm))
+            pmfWN/sum(pmfWN), pmfMN/sum(pmfMN), gw=gw, gm=gm))
       pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
       pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
       pmf_target <- pmf_target/sum(pmf_target)

@@ -107,6 +107,7 @@ rpm.hessian_nog <- function(theta,Sd,Xd,Zd,NumBeta,NumGamma,NumGammaW,NumGammaM,
 #'
 #' @param ... arguments to [`print`].
 #' @param messageArgs a list of arguments to be passed directly to [`message`].
+#' @return No return value, called for side effects.
 #'
 #' @examples
 #' cat(1:5)

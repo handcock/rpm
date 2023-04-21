@@ -40,12 +40,16 @@ rows in \code{U}. The order of the columns is the same as the columns in \code{V
 This code allows the self-matched option
 }
 \references{
-Goyal, Handcock, Jackson. Rendall and Yeung (2023).
+Goyal, Shuchi; Handcock, Mark S.; Jackson, Heide M.; Rendall, Michael S. and Yeung, Fiona C. (2023).
 \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation}
 \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
-Menzel, K. (2015).
+
+Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
+JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
+
+Menzel, Konrad (2015).
 \emph{Large Matching Markets as Two-Sided Demand Systems}
-Econometrica, Vol. 83, No. 3 (May, 2015), 897-941.
+Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 }
 \seealso{
 rpm
