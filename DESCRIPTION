@@ -15,6 +15,7 @@ License: GPL-3 + file LICENSE
 License_is_FOSS: yes
 License_restricts_use: no
 URL: https://github.com/handcock/rpm
+BugReports: https://github.com/handcock/rpm/issues
 LinkingTo: Rcpp, RcppArmadillo
 Depends:
     R (>= 4.0.0),
@@ -35,4 +36,4 @@ Imports:
     doFuture,
     foreach
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.2.3

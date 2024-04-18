@@ -31,7 +31,7 @@
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation},
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
 #'
-#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review},, Vol. 41, 27-57.
+#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
 #' JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
 #'
 #' Menzel, Konrad (2015).
@@ -51,11 +51,11 @@ Gale_Shapley <- function(U,V,return.data.frame=FALSE, cpp=TRUE, nmax=10*nrow(U))
 
  if(cpp){
     # These are the integer versions
-    Ua <- matrixStats::rowRanks(U)
+    Ua <- matrixStats::rowRanks(U, ties.method = "max")
     U <- sweep(Ua[,-1],1,Ua[,1],"-")
     O=t(apply(-U,1,order))
-    Ua <- matrixStats::rowRanks(-U[,-1])
-    V <- matrixStats::rowRanks(V)
+    Ua <- matrixStats::rowRanks(-U[,-1], ties.method = "max")
+    V <- matrixStats::rowRanks(V, ties.method = "max")
     V <- sweep(V[,-1],1,V[,1],"-")
     storage.mode(U) <- "integer"
     storage.mode(V) <- "integer"
