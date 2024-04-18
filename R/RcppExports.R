@@ -41,8 +41,8 @@ augpmfWM <- function(pmfW, pmfM, pmf, gw, gm, pmfW_N, pmfM_N, gwN, gmN) {
 }
 
 #' @export
-augpmfnew <- function(beta, GammaW, GammaM, S, X, Z, pmfW, pmfM, gw, gm) {
-    .Call('_rpm_augpmfnew', PACKAGE = 'rpm', beta, GammaW, GammaM, S, X, Z, pmfW, pmfM, gw, gm)
+auxGamma <- function(beta, GammaW, GammaM, S, X, Z, pmfW, pmfM, gw, gm) {
+    .Call('_rpm_auxGamma', PACKAGE = 'rpm', beta, GammaW, GammaM, S, X, Z, pmfW, pmfM, gw, gm)
 }
 
 #' @export
@@ -60,23 +60,28 @@ eqcond <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmf
 }
 
 #' @export
-gloglik_nog <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
-    .Call('_rpm_gloglik_nog', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+gloglik <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
+    .Call('_rpm_gloglik', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
 }
 
 #' @export
-hloglik_nog <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
-    .Call('_rpm_hloglik_nog', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+hloglik <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
+    .Call('_rpm_hloglik', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
 }
 
 #' @export
-jeqcond_nog <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
-    .Call('_rpm_jeqcond_nog', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+jeqcond <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
+    .Call('_rpm_jeqcond', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
 }
 
 #' @export
 loglik <- function(beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints) {
     .Call('_rpm_loglik', PACKAGE = 'rpm', beta, GammaW, GammaM, Sd, Xd, Zd, Sdim, Xdim, Zdim, pmfW, pmfM, pmf, counts, gw, gm, constraints)
+}
+
+#' @export
+logpmfest <- function(beta, GammaW, GammaM, S, X, Z, pmfW, pmfM, gw, gm) {
+    .Call('_rpm_logpmfest', PACKAGE = 'rpm', beta, GammaW, GammaM, S, X, Z, pmfW, pmfM, gw, gm)
 }
 
 #' @export

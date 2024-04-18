@@ -14,7 +14,7 @@
 #' waiting for proper documentation to be written.
 #' 
 #' @name rpm-internal
-#' @aliases GSi_NTU GS_NTU GSi_NTU_O PSeqcond PSgeqcond augpmf augpmfWM augpmfnew checkstable eqcond jeqcond_nog gloglik_nog hloglik_nog loglik probcounts qloglik stablearma loglikfun_nog
+#' @aliases GSi_NTU GS_NTU GSi_NTU_O PSeqcond PSgeqcond auxGamma augpmf augpmfWM logpmfest checkstable eqcond jeqcond gloglik hloglik loglik probcounts qloglik stablearma loglikfun
 #' @return No return value, called for side effects.
 #' @seealso rpm-package
 #' @keywords internal

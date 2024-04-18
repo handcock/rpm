@@ -16,6 +16,7 @@ control.rpm(
   maxeval = 2000,
   bs.maxeval = 2000,
   bs.xtol_rel = 1e-08,
+  bs.save.data = FALSE,
   check_derivatives = FALSE,
   bootstrap = TRUE,
   hessian = FALSE,
@@ -85,6 +86,9 @@ if bs.maxeval is non-positive. Default value:50}
 \item{bs.xtol_rel}{scalar; Stop the bootstrap optimization when an optimization step (or an estimate of the optimum)
 changes every parameter by less than bs.xtol_rel multiplied by the
 absolute value of the parameter. See the parameter xtol_rel for details.}
+
+\item{bs.save.data}{logical; Should the bootstrapped data be saved in the bootstrap return list (as components
+\code{Xdata} and \code{Zdata}).}
 
 \item{check_derivatives}{logical; Compare the user-supplied analytic gradients
 with the finite difference approximations.}

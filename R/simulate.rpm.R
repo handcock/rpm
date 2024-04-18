@@ -228,7 +228,7 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
         if(rescale){
           if(!bootstrap){
            # Note that this recomputes the Gammas based on beta, gw, gm, pmfW, pmfM
-            pmf_target <- exp(augpmfnew(beta=object$coefficients[1:object$NumBeta],
+            pmf_target <- exp(logpmfest(beta=object$coefficients[1:object$NumBeta],
                   GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
                   GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                   S=object$Sd, X=object$Xd, Z=object$Zd,
@@ -242,7 +242,7 @@ simulate.rpm <- function(object, nsim=1, seed = NULL, ..., N = NULL, num_women=N
         }else{
           if(!bootstrap){
            #pmf_target <- object$pmf_est
-            pmf_target <- exp(augpmfnew(beta=object$coefficients[1:object$NumBeta],
+            pmf_target <- exp(logpmfest(beta=object$coefficients[1:object$NumBeta],
                   GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
                   GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                   S=object$Sd, X=object$Xd, Z=object$Zd,

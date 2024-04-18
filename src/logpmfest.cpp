@@ -9,7 +9,7 @@ using namespace Rcpp;
 
 //' @export
 // [[Rcpp::export]]
-arma::mat augpmfnew(arma::vec beta, arma::vec GammaW, arma::vec GammaM, arma::cube S, arma::cube X, arma::cube Z, arma::vec pmfW, arma::vec pmfM, double gw, double gm) {
+arma::mat logpmfest(arma::vec beta, arma::vec GammaW, arma::vec GammaM, arma::cube S, arma::cube X, arma::cube Z, arma::vec pmfW, arma::vec pmfM, double gw, double gm) {
   unsigned int it=0u;
 //unsigned int NumBeta=beta.size();
   unsigned int NumGammaW=GammaW.size();
@@ -46,6 +46,7 @@ arma::mat augpmfnew(arma::vec beta, arma::vec GammaW, arma::vec GammaM, arma::cu
    }
    it++;
   }
+//Rprintf("NumGammaW %d delta(0,0) %f\n",NumGammaW, delta(0,0));
 
   GammaW = Gamma.head(NumGammaW);
   GammaM = Gamma.tail(NumGammaM);
@@ -71,7 +72,6 @@ arma::mat augpmfnew(arma::vec beta, arma::vec GammaW, arma::vec GammaM, arma::cu
     }
     Wstar += Ustar + Vstar;
     apmf(j,k) = log(2.0)+(Wstar + GammaW(j)+ GammaM(k) + gm + gw + log(pmfW(j)*pmfM(k))-log((1.0+exp(GammaW(j)))*(1.0+exp(GammaM(k))))) ;
-//  apmf(j,k) = (Wstar + GammaW(j)+ GammaM(k) + gm + gw + log(pmfW(j)*pmfM(k))-log((1.0+exp(GammaW(j)))*(1.0+exp(GammaM(k))))) ;
    }
   }
 

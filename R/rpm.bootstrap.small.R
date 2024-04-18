@@ -4,10 +4,23 @@ rpm.bootstrap.small <- function(i, solution, num_women, num_men, Jw, Jm, U_star,
      NumBeta,NumGammaW,NumGammaM,LB,UB,control,
      num_sampled){
 
-        Ws <- stats::rmultinom(n=1, size=num_women, prob=pmfW)
-        Ms <- stats::rmultinom(n=1, size=num_men, prob=pmfM)
-        Ws <- rep(seq_along(pmfW),Ws)
-        Ms <- rep(seq_along(pmfM),Ms)
+        Ws <- rep(seq_along(pmfW),round(pmfW*num_women))
+        if(length(Ws) > num_women+0.01){
+         Ws <- Ws[-sample.int(length(Ws),size=length(Ws)-num_women,replace=FALSE)]
+        }
+        if(length(Ws) < num_women-0.01){
+         Ws <- c(Ws,sample.int(length(pmfW),size=num_women-length(Ws),prob=pmfW,replace=TRUE))
+        }
+        Ws <- Ws[sample.int(length(Ws))]
+        Ms <- rep(seq_along(pmfM),round(pmfM*num_men))
+        if(length(Ms) > num_men+0.01){
+         Ms <- Ms[-sample.int(length(Ms),size=length(Ms)-num_men,replace=FALSE)]
+        }
+        if(length(Ms) < num_men-0.01){
+         Ms <- c(Ms,sample.int(length(pmfM),size=num_men-length(Ms),prob=pmfM,replace=TRUE))
+        }
+        Ms <- Ms[sample.int(length(Ms))]
+
         # create utility matrices
         U_star = matrix(0, nrow=length(Ws), ncol = length(Ms))
         V_star = matrix(0, nrow=length(Ms), ncol = length(Ws))
@@ -58,6 +71,7 @@ rpm.bootstrap.small <- function(i, solution, num_women, num_men, Jw, Jm, U_star,
 
           X_w_rel <- rep(1,nrow(Xdata))
           Z_w_rel <- rep(1,nrow(Zdata))
+          # Do not run for a census
           if(sampling_design %in% c("stock-stock", "stock-flow")){
           if(sampling_design %in% c("stock-stock", "census")){
             paired_W <- !is.na(Xdata[,pair_id])
@@ -134,128 +148,28 @@ rpm.bootstrap.small <- function(i, solution, num_women, num_men, Jw, Jm, U_star,
           Xdata=Xdata[sample.int(nrow(Xdata)),]
           Zdata=Zdata[sample.int(nrow(Zdata)),]
 
-      # IDs of the women matched to the sampled men (and vice versa)
-      if(sampling_design != "census"){
-        paired_and_sampled_M <- Zdata[,sampled] & !is.na(Zdata[,pair_id])
-        paired_and_sampled_W <- Xdata[,sampled] & !is.na(Xdata[,pair_id])
-      } else {
-	paired_and_sampled_M <- !is.na(Zdata[,pair_id])
-        paired_and_sampled_W <- !is.na(Xdata[,pair_id])    
-      }
-      M_paired_to_sampled_W <- match(Xdata[paired_and_sampled_W,pair_id], Zdata[,Zid])
-      W_paired_to_sampled_M <- match(Zdata[paired_and_sampled_M,pair_id], Xdata[,Xid])
-      XdataM <- Xdata[W_paired_to_sampled_M,]
-      ZdataW <- Zdata[M_paired_to_sampled_W,]
-
-      if (sampling_design == "census") {
-       pmfW = as.numeric(stats::xtabs(~ factor(Xtype,1:num_Xu), data=Xdata))
-       pmfM = as.numeric(stats::xtabs(~ factor(Ztype,1:num_Zu), data=Zdata))
-      }
-      if (sampling_design == "stock-stock") {
-       subset=Xdata[,sampled] &  is.na(Xdata[,pair_id])
-       pmfW_S = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
-       subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
-       pmfW_P = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=subset))
-       pmfW = pmfW_S + pmfW_P
-       subset=Zdata[,sampled] &  is.na(Zdata[,pair_id])
-       pmfM_S = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
-       subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
-       pmfM_P = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=subset))
-       pmfM = pmfM_S + pmfM_P
-      }
-      if (sampling_design == "stock-flow") {
-        pmfW = as.numeric(stats::xtabs(X_w ~ factor(Xtype,1:num_Xu), data=Xdata, subset=sampled))
-        subset=Zdata[,sampled] & !is.na(Zdata[,pair_id])
-        pmfW = pmfW + as.numeric(stats::xtabs(Zdata$Z_w[subset] ~ factor(Xdata$Xtype[W_paired_to_sampled_M],1:num_Xu)))
-        pmfM = as.numeric(stats::xtabs(Z_w ~ factor(Ztype,1:num_Zu), data=Zdata, subset=sampled))
-        subset=Xdata[,sampled] & !is.na(Xdata[,pair_id])
-        pmfM = pmfM + as.numeric(stats::xtabs(Xdata$X_w[subset] ~ factor(Zdata$Ztype[M_paired_to_sampled_W],1:num_Zu)))
-      }
-      pmfW = pmfW/sum(pmfW)
-      pmfM = pmfM/sum(pmfM)
-      names(pmfW) <- cnW
-      names(pmfM) <- cnM
-  
-      X_sel <- is.na(Xdata[,pair_id])
-      Z_sel <- is.na(Zdata[,pair_id])
-      Xcounts_single = as.numeric(stats::xtabs(~ factor(Xtype, 1:num_Xu), data=Xdata, subset=X_sel)) 
-      Zcounts_single = as.numeric(stats::xtabs(~ factor(Ztype, 1:num_Zu), data=Zdata, subset=Z_sel))
-  
-      counts = matrix(0,nrow=1+num_Xu, ncol=1+num_Zu) # women (X) indexed by row, men (Z) indexed by column
-      colnames(counts) <- c(cnM,"singles")
-      rownames(counts) <- c(cnW,"singles")
-      
-      # The number of people in the population
-      N = num_women + num_men
-      gw = log(num_women/N) # to ensure exp(gw)+exp(gm) = 1
-      gm = log(num_men/N) # to ensure exp(gw)+exp(gm) = 1
-
-      pmf = matrix(0,nrow=1+num_Xu, ncol=1+num_Zu) # women (X) indexed by row, men (Z) indexed by column
-      counts = matrix(0,nrow=1+num_Xu, ncol=1+num_Zu) # women (X) indexed by row, men (Z) indexed by column
-      colnames(pmf) <- c(cnM,"singles")
-      rownames(pmf) <- c(cnW,"singles")
-      colnames(counts) <- c(cnM,"singles")
-      rownames(counts) <- c(cnW,"singles")
-  
-      # Compute the number sampled (mainly for the s.e. computation)
-      if (sampling_design == "stock-stock") {
-       num_sampled <- nrow(Xdata)+nrow(Zdata)-sum(!is.na(Zdata[,pair_id]))
-      }else{
-       if (sampling_design == "stock-flow") {
-        num_sampled <- sum(Xdata[,sampled])+sum(Zdata[,sampled])
-       }else{
-        # census for now
-        num_sampled <- nrow(Xdata)+nrow(Zdata)
-       }
-      }
-
-      if (sampling_design == "census") {
-        Xtype_single = as.numeric(stats::xtabs(~ factor(Xtype, 1:num_Xu), data=Xdata, subset=X_sel)) 
-        Ztype_single = as.numeric(stats::xtabs(~ factor(Ztype, 1:num_Zu), data=Zdata, subset=Z_sel))
-        pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu) + factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu) + factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-        pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
-        counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(ZdataW[,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(XdataM[,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-      }
-      if (sampling_design == "stock-stock") {
-        Xtype_single = as.numeric(stats::xtabs(X_w ~ factor(Xtype, 1:num_Xu), data=Xdata, subset=X_sel)) 
-        Ztype_single = as.numeric(stats::xtabs(Z_w ~ factor(Ztype, 1:num_Zu), data=Zdata, subset=Z_sel))
-        pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-        pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
-        counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu)))
-        counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
-      }
-      if (sampling_design == "stock-flow") {
-        Xtype_single = as.numeric(stats::xtabs(X_w ~ factor(Xtype, 1:num_Xu), data=Xdata, subset=X_sel)) 
-        Ztype_single = as.numeric(stats::xtabs(Z_w ~ factor(Ztype, 1:num_Zu), data=Zdata, subset=Z_sel))
-        pmf[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(Xdata[paired_and_sampled_W,X_w]~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(Zdata[paired_and_sampled_M,Z_w]~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-        pmf[1:num_Xu,1:num_Zu] <- pmf[1:num_Xu,1:num_Zu] / N
-        counts[1:num_Xu,1:num_Zu] <- as.numeric(stats::xtabs(~factor(Xdata[paired_and_sampled_W,"Xtype"],1:num_Xu)+factor(Zdata[M_paired_to_sampled_W,"Ztype"],1:num_Zu))) + as.numeric(stats::xtabs(~factor(Xdata[W_paired_to_sampled_M,"Xtype"],1:num_Xu)+factor(Zdata[paired_and_sampled_M,"Ztype"],1:num_Zu)))
-        counts[1:num_Xu,1:num_Zu] <- 2*counts[1:num_Xu,1:num_Zu]
-      }
-
-      if (!is.empty(Xcounts_single)) {
-        pmf[1:num_Xu,1+num_Zu] = Xtype_single / N
-        counts[1:num_Xu,1+num_Zu] = Xcounts_single
-      }
-      if (!is.empty(Zcounts_single)) {
-        pmf[1+num_Xu,1:num_Zu] = Ztype_single / N
-        counts[1+num_Xu,1:num_Zu] = Zcounts_single
-      }
-  
-      if (sampling_design == "census") { 
-        pmfN <- pmf*num_sampled
-      }else{
-        pmfN <- counts
-      }
+      mc <- rpm_make_counts(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pair_id, X_w, Z_w, Xu, Zu, verbose=FALSE)
+      pmf <- mc$pmf
+      num_sampled=mc$num_sampled
+      nobs <- num_sampled
+      counts=mc$counts
+      pmfW=mc$pmfW
+      pmfM=mc$pmfM
+      pmfN=mc$pmfN
+      N=mc$N
+      gw=mc$gw
+      gm=mc$gm
+      num_women=mc$num_women
+      num_men=mc$num_men
 
       control$xtol_rel=control$bs.xtol_rel
       control$maxeval=control$bs.maxeval
       solution[is.na(solution) | solution>=UB] = UB[is.na(solution) | solution>=UB]-0.01
       solution[is.na(solution) | solution<=LB] = LB[is.na(solution) | solution<=LB]+0.01
       out.text <- capture.output(
-       out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun_nog, 
-                 eval_grad_f=gloglikfun_nog,
-                 eval_g_eq=eqfun_nog,  eval_jac_g_eq=jeqfun_nog,
+       out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun, 
+                 eval_grad_f=gloglikfun,
+                 eval_g_eq=eqfun,  eval_jac_g_eq=jeqfun,
                  lb=LB,ub=UB,
                  Sd=S,Xd=X,Zd=Z,NumGammaW=NumGammaW, NumGammaM=NumGammaM,
                  pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
@@ -272,11 +186,12 @@ rpm.bootstrap.small <- function(i, solution, num_women, num_men, Jw, Jm, U_star,
       out.fit$eval_f  <- NULL
 
       th_hat <-  out.fit$solution
-      pmf_est <- exp(augpmfnew(th_hat[1:NumBeta],
+      pmf_est <- exp(logpmfest(th_hat[1:NumBeta],
                   GammaW=th_hat[NumBeta+(1:NumGammaW)], 
                   GammaM=th_hat[(NumBeta+NumGammaW)+(1:NumGammaM)],
                   S, X, Z,
                   pmfW, pmfM, gw=gw, gm=gm))
+      pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
 
 
       PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
@@ -298,20 +213,12 @@ rpm.bootstrap.small <- function(i, solution, num_women, num_men, Jw, Jm, U_star,
       names(LOGODDS_SW) <- paste0("LOD_Single.W.",cnW)
       names(LOGODDS_SM) <- paste0("LOD_Single.M.",cnM)
 
-      pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-      pmf_est <- pmf_est/sum(pmf_est)
-
-      pmfN_households <- pmfN
-      pmfN_households[-nrow(pmfN), -ncol(pmfN)] <- 0.5*pmfN[-nrow(pmfN), -ncol(pmfN)]
-      pmf_households <- pmfN_households / sum(pmfN_households)
-      loglik <- stats::dmultinom(x=pmfN_households,prob=pmf_est,log=TRUE)
-
+      if(!control$bs.save.data){Xdata <- Zdata <- NULL}
       list(est=th_hat, LOGODDS_SW=LOGODDS_SW,LOGODDS_SM=LOGODDS_SM,
            Xdata=Xdata,
            Zdata=Zdata,
            pmfW=pmfW, pmfM=pmfM,
            pmf=pmf, counts=counts, nobs=num_sampled,
-           pmf_est=pmf_est,
-           aic = 2*NumBeta-2*loglik, bic=log(num_sampled)*NumBeta-2*loglik, loglik=loglik
+           pmf_est=pmf_est
           )
      }

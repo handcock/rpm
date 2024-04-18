@@ -5,7 +5,7 @@ using namespace Rcpp;
 // Rcpp attribute tag require to create interface to R.
 //' @export
 // [[Rcpp::export]]
-NumericMatrix jeqcond_nog(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints){
+NumericMatrix jeqcond(NumericVector beta, NumericVector GammaW, NumericVector GammaM, NumericVector Sd, NumericVector Xd, NumericVector Zd, IntegerVector Sdim, IntegerVector Xdim, IntegerVector Zdim, NumericVector pmfW, NumericVector pmfM, NumericMatrix pmf, NumericMatrix counts, double gw, double gm, int constraints){
   arma::cube S(Sd.begin(), Sdim[0], Sdim[1], Sdim[2]);
   arma::cube X(Xd.begin(), Xdim[0], Xdim[1], Xdim[2]);
   arma::cube Z(Zd.begin(), Zdim[0], Zdim[1], Zdim[2]);

@@ -30,22 +30,30 @@ double loglik(NumericVector beta, NumericVector GammaW, NumericVector GammaM, Nu
      Ustar += beta(i+Sdm)*X(j,k,i);
     }
     Vstar = 0.0;
+//  for (i = 0; i < Sdm; ++i) {
+//   Vstar += beta(i)*S(k,j,i);
+//  }
     for (i = 0; i < Mdm; ++i) {
      Vstar += beta(i+Sdm+Wdm)*Z(k,j,i);
     }
     Wstar += Ustar + Vstar;
-    llik += 0.5*counts(j,k)*(Wstar + GammaW(j)+ GammaM(k) + gm + gw + log(pmfW(j)*pmfM(k))-log((1.0+exp(GammaW(j)))*(1.0+exp(GammaM(k))))) ;
+    llik += counts(j,k)*(log(2.0) + Wstar + GammaW(j)+ GammaM(k) + gm + gw + log(pmfW(j)*pmfM(k))-log((1.0+exp(GammaW(j)))*(1.0+exp(GammaM(k))))) ;
    }
   }
 
   for (j = 0; j < NumGammaW; ++j) {
     llik += counts(j,NumGammaM)*(GammaW(j) + gw + log(pmfW(j)) - log(1.0+exp(GammaW(j))));
+//Rprintf("j %d counts %f\n",j,counts(j,NumGammaM));
   }
   for (k = 0; k < NumGammaM; ++k) {
     llik += counts(NumGammaW,k)*(GammaM(k) + gm + log(pmfM(k)) - log(1.0+exp(GammaM(k))));
+//Rprintf("k %d counts %f\n",k,counts(NumGammaW,k));
   }
   if(std::isnan(llik) || !std::isfinite(llik)){
+  Rprintf("bad lik %f GammaM(0) %f  GammaM(1) %f\n",llik, GammaM(0), GammaW(0));
     llik= 10000.0;
   }
+//if(std::isnan(llik) || !std::isfinite(llik) || (llik < -1000000000.0)){
+//Rprintf("lik %f\n",llik);
   return llik;
 }

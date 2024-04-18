@@ -128,7 +128,7 @@ rpmpopulationpmf <- function(object, N = 2000, num_women=NULL, num_men=NULL, pmf
       NumGammaM <- object$NumGammaM
       th_hat <- object$coefficients
 
-      pmf_target <- exp(augpmfnew(object$coefficients[1:object$NumBeta],
+      pmf_target <- exp(logpmfest(object$coefficients[1:object$NumBeta],
             GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
             GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
             object$Sd, object$Xd, object$Zd,

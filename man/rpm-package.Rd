@@ -67,6 +67,13 @@ Menzel, Konrad (2015).
 \emph{Large Matching Markets as Two-Sided Demand Systems},
 Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://github.com/handcock/rpm}
+}
+
+}
 \author{
 Mark S. Handcock <handcock@stat.ucla.edu>
 }

@@ -7,19 +7,20 @@
 \alias{GSi_NTU_O}
 \alias{PSeqcond}
 \alias{PSgeqcond}
+\alias{auxGamma}
 \alias{augpmf}
 \alias{augpmfWM}
-\alias{augpmfnew}
+\alias{logpmfest}
 \alias{checkstable}
 \alias{eqcond}
-\alias{jeqcond_nog}
-\alias{gloglik_nog}
-\alias{hloglik_nog}
+\alias{jeqcond}
+\alias{gloglik}
+\alias{hloglik}
 \alias{loglik}
 \alias{probcounts}
 \alias{qloglik}
 \alias{stablearma}
-\alias{loglikfun_nog}
+\alias{loglikfun}
 \title{Internal rpm Objects}
 \value{
 No return value, called for side effects.

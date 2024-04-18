@@ -28,7 +28,7 @@ logLik.rpm<-function(object, ...){
   llk<- object$loglik
   
   class(llk)<-"logLik"
-  attr(llk,"df")<-(object$NumBeta+1)
+  attr(llk,"df")<-(object$NumBeta)
   attr(llk,"nobs")<- object$nobs
 
   llk
@@ -52,7 +52,7 @@ logLikNull <- function(object, ...) UseMethod("logLikNull")
 #' @export
 logLikNull.rpm <- function(object, ...){
 
-  llk<- object$loglik.null
+  llk<- object$loglik_null
   
   class(llk)<-"logLik"
   attr(llk,"df")<-1

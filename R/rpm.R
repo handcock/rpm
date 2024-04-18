@@ -40,6 +40,10 @@
 #' \code{"stock-stock"} (households are sampled, each household can be a single or a couple);
 #' \code{"census"} (the sample is a census of the population of people).
 ## (only couples are included in the data).
+#' @param fixed.margins list If not NULL the numbers of men and women (i.e, in \code{pmfW} and \code{pmfM}) are assumed determined by
+#' outside information and are hence fixed. In this case \code{fixed.margins} should be a list with two elements. The first is
+#' a vector of women's margins for each type and the second is the men's margins for each type.
+#' The default, NULL, means these are estimated from sample data.
 #' @param control A list of control parameters for algorithm tuning. Constructed using
 #' \code{\link{control.rpm}}, which should be consulted for specifics. 
 #' @param verbose logical; if this is \code{TRUE}, the program will print out
@@ -112,6 +116,7 @@ rpm <- function(formula, Xdata, Zdata,
     X_w=NULL, Z_w=NULL, pair_w=NULL,
     sampled=NULL,
     sampling_design="stock-flow",
+    fixed.margins=NULL,
     control=control.rpm(), verbose=FALSE){
 
     if(!is.null(control$seed)) set.seed(control$seed)
@@ -206,6 +211,7 @@ rpm <- function(formula, Xdata, Zdata,
                     X_w=X_w, Z_w=Z_w, pair_w=pair_w,
                     sampled=sampled,
                     sampling_design=sampling_design,
+                    fixed.margins=fixed.margins,
                     control=control, verbose=verbose)
 
     fit$aic = 2*fit$NumBeta-2*fit$loglik

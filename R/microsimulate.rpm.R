@@ -64,7 +64,7 @@
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation},
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
 #'
-#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review},, Vol. 41, 27-57.
+#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
 #' JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
 #'
 #' Menzel, Konrad (2015).
@@ -139,31 +139,30 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         # bootstrap
         if(rescale){
           if(!bootstrap){
-            pmf_target <- exp(augpmfnew(object$coefficients[1:object$NumBeta],
+            # large.population=T and sample from object$coefficients
+            pmf_target <- exp(logpmfest(object$coefficients[1:object$NumBeta],
                 GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
                 GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                 object$Sd, object$Xd, object$Zd,
                 pmfW, pmfM, gw=gw, gm=gm))
             pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
-            pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
-            pmf_target <- pmf_target/sum(pmf_target)
+            if(any(is.na(pmf_target))) pmf_target <- object$pmf
           }else{
-            pmf_target <- augpmfWM(
-                pmfW=object$pmfW, pmfM=object$pmfM, pmf=object$pmf, gw=object$gw, gm=object$gm,
-                pmfW_N=pmfW_N/sum(pmfW_N), pmfM_N=pmfM_N/sum(pmfM_N), gwN=gw, gmN=gm)
-            pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
+            # large.population=T and bootstrap=T so sample from (observed) pmf
+            pmf_target <- object$pmf
           }
         }else{
           if(!bootstrap){
-            pmf_target <- exp(augpmfnew(object$coefficients[1:object$NumBeta],
+            # large.population=T and bootstrap=F, so sample from object$coefficients
+            pmf_target <- exp(logpmfest(object$coefficients[1:object$NumBeta],
                 GammaW=object$coefficients[object$NumBeta+(1:object$NumGammaW)],
                 GammaM=object$coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                 object$Sd, object$Xd, object$Zd,
                 pmfW, pmfM, gw=gw, gm=gm))
             pmf_target[nrow(pmf_target),ncol(pmf_target)] <- 0
-            pmf_target[-nrow(pmf_target), -ncol(pmf_target)] <- 2*pmf_target[-nrow(pmf_target), -ncol(pmf_target)]
-            pmf_target <- pmf_target/sum(pmf_target)
+            if(any(is.na(pmf_target))) pmf_target <- object$pmf
           }else{
+            # large.population=T and bootstrap=T so sample from (observed) pmf
             pmf_target <- object$pmf
           }
         }
@@ -311,17 +310,15 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         rpm.simulate.large.population.worker <- function(object, coefficients, N, X_w_rel, Z_w_rel, pmfW_N, pmfM_N, pmfW, pmfM, gm, gw, numX, numZ, bootstrap){
 
           if(!bootstrap){
-            pmf_target_boot <- exp(augpmfnew(coefficients[1:object$NumBeta],
+            pmf_target_boot <- exp(logpmfest(coefficients[1:object$NumBeta],
                 GammaW=coefficients[object$NumBeta+(1:object$NumGammaW)],
                 GammaM=coefficients[(object$NumBeta+object$NumGammaW)+(1:object$NumGammaM)],
                 object$Sd, object$Xd, object$Zd,
                 pmfW, pmfM, gw=gw, gm=gm))
             pmf_target_boot[nrow(pmf_target_boot),ncol(pmf_target_boot)] <- 0
+            if(any(is.na(pmf_target_boot))) pmf_target_boot <- object$pmf
           }else{
-            pmf_target_boot <- augpmfWM(
-                pmfW=object$pmfW, pmfM=object$pmfM, pmf=object$pmf, gw=object$gw, gm=object$gm,
-                pmfW_N=pmfW_N/sum(pmfW_N), pmfM_N=pmfM_N/sum(pmfM_N), gwN=gw, gmN=gm)
-            pmf_target_boot[nrow(pmf_target_boot),ncol(pmf_target_boot)] <- 0
+           pmf_target_boot <- object$pmf
           }
 
           cts <- -pmf_target_boot
@@ -330,14 +327,15 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           while( any(cts < -0.000000001) & ntries < 1000){
            for(i in 1:numX){ 
              if(pmfW_N[i] > 0 & any(pmf_target_boot[i,] > 0)){
-               a <- stats::rmultinom(n=1,size=pmfW_N[i],prob=c(sum(pmf_target_boot[i,1:numZ]),pmf_target_boot[i,(numZ+1)]))
-               cts[i,1:numZ] <- stats::rmultinom(n=1,size=a[1],prob=pmf_target_boot[i,1:numZ])
+               # distribute women as either paired or single
+               a <- stats::rmultinom(n=1,size=pmfW_N[i],prob=c(0.5*sum(pmf_target_boot[i,1:numZ]),pmf_target_boot[i,(numZ+1)]))
+               cts[i,1:numZ] <- 2*stats::rmultinom(n=1,size=a[1],prob=pmf_target_boot[i,1:numZ])
                cts[i,numZ+1] <- a[2]
              }else{
                cts[i,] <- 0
              }
            }
-           cts[numX+1,1:numZ] <- pmfM_N-apply(cts[-(numX+1),-(numZ+1),drop=FALSE],2,sum)
+           cts[numX+1,1:numZ] <- pmfM_N-0.5*apply(cts[-(numX+1),-(numZ+1),drop=FALSE],2,sum)
            ntries <- ntries + 1
           }
 #         M-H
@@ -354,24 +352,24 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
           for(i in 1:num_MH){ 
             if(rtest0[i] > 0.5){
              if(cts[pX1[i],pZ1[i]] > 0 & cts[pX2[i],pZ2[i]] > 0){
-              alphai <- alpha[i]*cts[pX1[i],pZ1[i]]*cts[pX2[i],pZ2[i]]/((cts[pX2[i],pZ1[i]]+1)*(cts[pX1[i],pZ2[i]] + 1))
+              alphai <- alpha[i]*cts[pX1[i],pZ1[i]]*cts[pX2[i],pZ2[i]]/((cts[pX2[i],pZ1[i]]+2)*(cts[pX1[i],pZ2[i]] + 2))
               accept <- (alphai > 1) | (alphai > rtest1[i])
               if(accept){
-               cts[pX1[i],pZ1[i]] <- cts[pX1[i],pZ1[i]] - 1 
-               cts[pX2[i],pZ1[i]] <- cts[pX2[i],pZ1[i]] + 1 
-               cts[pX2[i],pZ2[i]] <- cts[pX2[i],pZ2[i]] - 1 
-               cts[pX1[i],pZ2[i]] <- cts[pX1[i],pZ2[i]] + 1 
+               cts[pX1[i],pZ1[i]] <- cts[pX1[i],pZ1[i]] - 2 
+               cts[pX2[i],pZ1[i]] <- cts[pX2[i],pZ1[i]] + 2 
+               cts[pX2[i],pZ2[i]] <- cts[pX2[i],pZ2[i]] - 2 
+               cts[pX1[i],pZ2[i]] <- cts[pX1[i],pZ2[i]] + 2 
               }
              }
             }else{
              if(cts[pX2[i],pZ1[i]] > 0 & cts[pX1[i],pZ2[i]] > 0){
-              alphai <- (1/alpha[i])*cts[pX2[i],pZ1[i]]*cts[pX1[i],pZ2[i]]/((cts[pX1[i],pZ1[i]]+1)*(cts[pX2[i],pZ2[i]] + 1))
+              alphai <- (1/alpha[i])*cts[pX2[i],pZ1[i]]*cts[pX1[i],pZ2[i]]/((cts[pX1[i],pZ1[i]]+2)*(cts[pX2[i],pZ2[i]] + 2))
               accept <- (alphai > 1) | (alphai > rtest1[i])
               if(accept){
-               cts[pX1[i],pZ1[i]] <- cts[pX1[i],pZ1[i]] + 1 
-               cts[pX2[i],pZ1[i]] <- cts[pX2[i],pZ1[i]] - 1 
-               cts[pX2[i],pZ2[i]] <- cts[pX2[i],pZ2[i]] + 1 
-               cts[pX1[i],pZ2[i]] <- cts[pX1[i],pZ2[i]] - 1 
+               cts[pX1[i],pZ1[i]] <- cts[pX1[i],pZ1[i]] + 2 
+               cts[pX2[i],pZ1[i]] <- cts[pX2[i],pZ1[i]] - 2 
+               cts[pX2[i],pZ2[i]] <- cts[pX2[i],pZ2[i]] + 2 
+               cts[pX1[i],pZ2[i]] <- cts[pX1[i],pZ2[i]] - 2 
               }
              }
             }
@@ -381,7 +379,7 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
             return( list(pmf_target=pmf_target_boot, counts=cts, cts.orig=cts.orig) )
           }
           num_jk <- cts
-#         End count estimation
+
           I <- NULL
           Is <- NULL
           for( j in 1:numX){
@@ -399,7 +397,7 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
 #             resample Xdata and Zdata pairs with Xtype==j & Ztype==k
               I <- c(I, sample(
                       c(object$Xdata[selX,object$Xid], object$Zdata[selZ,object$Zid]),
-                      replace=TRUE,size=num_jk[j,k],
+                      replace=TRUE,size=0.5*num_jk[j,k],
                       prob=c(X_w_rel[selX], Z_w_rel[selZ])
                               )
                     )
@@ -432,7 +430,6 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
 #        duplicated cases by creating unique IDs for them (and their partners).
           Idups <- Is[duplicated(Is)]
           Iunique <- unique(Idups)
-#         Iunique <- I[!duplicated(I)]
           for( l in Iunique ){
            a <- XdataSingle[,object$Xid] == l
            if(any(a)){
@@ -553,18 +550,18 @@ microsimulate <- function(object, nsim=1, seed = NULL, pmfW_N=NULL, pmfM_N=NULL,
         # Use the direct (small population) method
         # These are the categories of women
         Ws <- rep(x=seq_along(pmfW_N),times=round(pmfW_N))
-        if(length(Ws) > num_women){
+        if(length(Ws) > num_women+0.01){
          Ws <- Ws[-sample.int(length(Ws),size=length(Ws)-num_women,replace=FALSE)]
         }
-        if(length(Ws) < num_women){
+        if(length(Ws) < num_women-0.01){
          Ws <- c(Ws,sample.int(length(pmfW_N),size=num_women-length(Ws),prob=pmfW_N,replace=TRUE))
         }
         Ws <- Ws[sample.int(length(Ws))]
         Ms <- rep(x=seq_along(pmfM_N),times=round(pmfM_N))
-        if(length(Ms) > num_men){
+        if(length(Ms) > num_men+0.01){
          Ms <- Ms[-sample.int(length(Ms),size=length(Ms)-num_men,replace=FALSE)]
         }
-        if(length(Ms) < num_men){
+        if(length(Ms) < num_men-0.01){
          Ms <- c(Ms,sample.int(length(pmfM_N),size=num_men-length(Ms),prob=pmfM_N,replace=TRUE))
         }
         Ms <- Ms[sample.int(length(Ms))]

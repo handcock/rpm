@@ -40,6 +40,10 @@
 #' \code{"stock-stock"} (households are sampled, each household can be a single or a couple);
 #' \code{"census"} (the sample is a census of the population of people).
 ## (only couples are included in the data).
+#' @param fixed.margins list If not NULL the numbers of men and women (i.e, in \code{pmfW} and \code{pmfM}) are assumed determined by
+#' outside information and are hence fixed. In this case \code{fixed.margins} should be a list with two elements. The first is
+#' a vector of women's margins for each type and the second is the men's margins for each type.
+#' The default, NULL, means these are estimated from sample data.
 #' @param control A list of control parameters for algorithm tuning. Constructed using
 #' \code{\link{control.rpm}}, which should be consulted for specifics. 
 #' @param verbose logical; if this is \code{TRUE}, the program will print out
@@ -82,7 +86,7 @@
 #' \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation},
 #' \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
 #'
-#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review},, Vol. 41, 27-57.
+#' Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
 #' JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
 #'
 #' Menzel, Konrad (2015).
@@ -107,6 +111,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     X_w=NULL, Z_w=NULL, pair_w=NULL,
     sampled=NULL,
     sampling_design="stock-flow",
+    fixed.margins=fixed.margins,
     control=control.rpm(), verbose=FALSE){
 
     if(!is.null(control$seed)) set.seed(control$seed)
@@ -194,15 +199,13 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     if(!is.empty(W_duplicated_pair_id)){
       message("The women's data, Xdata, contains duplicated pair IDs. These are:")
       a <- Xdata[!is.na(Xdata[,pair_id]),][W_pair_id %in% W_duplicated_pair_id,]
-      a <- a[order(a[,pair_id]),]
-      message_print(a)
+      message_print(a[order(a[,pair_id]),])
       message("Please correct this before reruning.")
     }
     if(!is.empty(M_duplicated_pair_id)){
       message("The men's data, Zdata, contains duplicated pair IDs. These are:")
       a <- Zdata[!is.na(Zdata[,pair_id]),][M_pair_id %in% M_duplicated_pair_id,]
-      a <- a[order(a[,pair_id]),]
-      message_print(a)
+      message_print(a[order(a[,pair_id]),])
       message("Please correct this before reruning.")
     }
     if(!is.empty(W_duplicated_pair_id) | !is.empty(M_duplicated_pair_id) | !all(W_paired_to_M) | !all(M_paired_to_W)){
@@ -237,13 +240,13 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     W_matched_vars <- model_vars %in% colnames(Xdata)    
     if(!all(W_matched_vars)){
       message("Some of the variables in the formula do not appear in the women's data, Xdata. These are:")
-      message(model_vars[!W_matched_vars])
+      message_print(model_vars[!W_matched_vars])
       message("Please correct this before reruning.")
     }
     M_matched_vars <- model_vars %in% colnames(Zdata)    
     if(!all(M_matched_vars)){
       message("Some of the variables in the formula do not appear in the men's data, Zdata. These are:")
-      message(model_vars[!M_matched_vars])
+      message_print(model_vars[!M_matched_vars])
       message("Please correct this before reruning.")
     }
     if(!all(W_matched_vars) | !all(W_matched_vars)){
@@ -320,15 +323,55 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     mc <- rpm_make_counts(Xdata, Zdata, sampling_design, sampled, Xid, Zid, pair_id, X_w, Z_w, Xu, Zu, verbose)
     pmf <- mc$pmf
     num_sampled=mc$num_sampled
+    # Compute the number observations (mainly for the BIC computation)
+    if (!is.null(fixed.margins)) {
+     if (sampling_design == "stock-stock") {
+       nobs <- sum(!is.na(Zdata[,pair_id]))
+     }else{
+      if (sampling_design == "stock-flow") {
+       nobs <- sum(!is.na(Zdata[,pair_id]))
+      }else{
+        # census for now
+        nobs <- sum(!is.na(Zdata[,pair_id]))
+      }
+     }
+    }else{
+      nobs <- num_sampled
+    }
     counts=mc$counts
-    pmfW=mc$pmfW
-    pmfM=mc$pmfM
-    pmfN=mc$pmfN
-    N=mc$N
-    gw=mc$gw
-    gm=mc$gm
-    num_women=mc$num_women
-    num_men=mc$num_men
+    if (!is.null(fixed.margins)) {
+     if(!is(fixed.margins,"list") | length(fixed.margins) < 2){
+       stop("bad fixed.margins")
+     }
+     if(length(fixed.margins[[1]]) < length(mc$pmfW)){
+       warning("bad fixed.margins")
+       pmfW=mc$pmfW
+     }
+     if(length(fixed.margins[[2]]) < length(mc$pmfM)){
+       warning("bad fixed.margins")
+       pmfM=mc$pmfM
+       num_women=mc$num_women
+       num_men=mc$num_men
+     }else{
+       N <- sum(fixed.margins[[1]]) + sum(fixed.margins[[2]])
+       pmfW=fixed.margins[[1]] / sum(fixed.margins[[1]])
+       pmfM=fixed.margins[[2]] / sum(fixed.margins[[2]])
+       num_women=sum(fixed.margins[[1]])
+       num_men=sum(fixed.margins[[2]])
+     }
+     gw=log(num_women/N)
+     gm=log(num_men/N)
+     pmfN=mc$pmfN
+    }else{
+      pmfW=mc$pmfW
+      pmfM=mc$pmfM
+      pmfN=mc$pmfN
+      N=mc$N
+      gw=mc$gw
+      gm=mc$gm
+      num_women=mc$num_women
+      num_men=mc$num_men
+    }
 
     # 5) create model matrix
     modelmat <- rpm.model.matrix(model.terms, Xu, Zu)
@@ -348,21 +391,11 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     # 6) Set init_theta to a good starting value to save time
     init_theta = control[["init_theta"]]
     if(is.null(init_theta)|!is.vector(init_theta, mode = "numeric")|!(length(init_theta) %in% c(NumBeta,NumBeta+NumGamma))){
-        init_theta <- 
-                       c(log(sum(pmf[-nrow(pmf),-ncol(pmf)])/(1-sum(pmf[-nrow(pmf),-ncol(pmf)]))),
-                        rep(0,NumBeta-1),
-                       -log(c(2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],1,sum)/pmf[-nrow(pmf),ncol(pmf),drop=FALSE],
-                              2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],2,sum)/pmf[nrow(pmf),-ncol(pmf),drop=FALSE])))
-    }else{
-     tmp <- init_theta
-     if(identical(length(init_theta),NumBeta+NumGamma)){
-       init_theta <- tmp
-     }else{if(identical(length(init_theta),NumBeta)){
-       init_theta <- c(tmp,
-                       -log(c(2*apply(pmf[-nrow(pmf),-ncol(pmf),drop=FALSE],1,sum)/pmf[-nrow(pmf),ncol(pmf),drop=FALSE],
-                              2*apply(pmf[-nrow(pmf),-ncol(pmf)],2,sum)/pmf[nrow(pmf),-ncol(pmf)])))
-     }}
+      init_theta <- c(log(sum(pmf[-nrow(pmf),-ncol(pmf)])/(1-sum(pmf[-nrow(pmf),-ncol(pmf)]))), rep(0,NumBeta-1) )
     }
+    init_theta <- c(init_theta[1:NumBeta], rpm::auxGamma(init_theta[1:NumBeta],
+                    GammaW=rep(0,NumGammaW), GammaM=rep(0,NumGammaM), S, X, Z, pmfW, pmfM, gw=gw, gm=gm) )
+
     init_theta[is.na(init_theta) | is.nan(init_theta)] <- 0
     nstr = c(modelmat$Snames, modelmat$Xnames, modelmat$Znames)
     names(init_theta) <- c(nstr, paste0("LOD_Single.W.",cnW), paste0("LOD_Single.M.",cnM))
@@ -399,10 +432,11 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       stop("The lower bounds on the estimates should be at most the upper bounds. Please respecify them.")
     }
 
-    loglikfun=loglikfun_nog
-    gloglikfun=gloglikfun_nog
-    eqfun=eqfun_nog
-    jeqfun=jeqfun_nog
+    logpmfestfun=logpmfest
+    loglikfun=loglikfun
+    gloglikfun=gloglikfun
+    eqfun=eqfun
+    jeqfun=jeqfun
 
     test_eqcond=eqfun(init_theta, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design, constraints)
 
@@ -433,7 +467,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       message_print(a)
     }
 
-    out.hessian <- rpm.hessian_nog(out.list$solution,Sd=S,Xd=X,Zd=Z,
+    out.hessian <- rpm.hessian(out.list$solution,Sd=S,Xd=X,Zd=Z,
              NumBeta=NumBeta, NumGamma=NumGamma,
              NumGammaW=NumGammaW, NumGammaM=NumGammaM,
              pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
@@ -474,17 +508,21 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     if(inherits(out,"try-error") || any(is.na(out$solution))){
       message("MLPLE failed; restarting at different starting values.\n")
       if(inherits(out,"try-error")){
-         message("MLPLE still contains NAs.\n")
+         message("MLPLE setting NAs to zero.\n")
+      }
+      if(all(is.na(out$solution))){
+        out$solution <- init_theta
+      }else{
+        out$solution[is.na(out$solution)] <- 0
       }
     }
-  
+
     out$loglik <- -out$objective
     out$exitflag <- out$status
     if(verbose){ 
       message("eq values:")
-      a <- eqfun(th_hat, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design,constraints)
-      message(a)
-      message(round(th_hat,2))
+      message_print((eqfun(th_hat, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design,constraints)))
+      message_print(round(th_hat,2))
     }
         
     if(is.nan(out$loglik) | is.infinite(out$loglik)){
@@ -493,12 +531,13 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
 
     out$eq = eqfun(th_hat, Sd=S, Xd=X, Zd=Z, NumGammaW, NumGammaM, pmfW, pmfM, pmf, pmfN, gw, gm, N, sampling_design,constraints)
 
-    pmf_est <- exp(augpmfnew(beta=th_hat[1:NumBeta],
+    pmf_est <- exp(logpmfestfun(beta=th_hat[1:NumBeta],
                 GammaW=th_hat[NumBeta+(1:NumGammaW)], 
                 GammaM=th_hat[(NumBeta+NumGammaW)+(1:NumGammaM)],
                 S=S, X=X, Z=Z,
                 pmfW=pmfW, pmfM=pmfM, gw=gw, gm=gm))
     pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
+    pmf_est_sol <- pmf_est
 
     PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
@@ -507,9 +546,6 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     PMF_PW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
     out$PMF_PW <- 1 - out$PMF_SW
     out$PMF_PM <- 1 - out$PMF_SM 
-
-    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-    pmf_est <- pmf_est/sum(pmf_est)
 
     names(out$PMF_SW) <- paste0("PMF_Single.W.",cnW)
     names(out$PMF_SM) <- paste0("PMF_Single.M.",cnM)
@@ -527,31 +563,90 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     names(out$LOGODDS_SW) <- paste0("LOD_Single.W.",cnW)
     names(out$LOGODDS_SM) <- paste0("LOD_Single.M.",cnM)
 
+    if(formula != stats::as.formula(~1)){
+      out.text <- capture.output(
+        out.list.null <- nloptr::nloptr(x0=out$solution[-c(2:NumBeta)], eval_f=loglikfun, 
+                  eval_grad_f=gloglikfun,
+                  eval_g_eq=eqfun,  eval_jac_g_eq=jeqfun,
+                  lb=LB[-c(2:NumBeta)],ub=UB[-c(2:NumBeta)],
+                  Sd=array(1, dim=c(NumGammaW,NumGammaM,1)),Xd=array(0, dim=c(NumGammaW,NumGammaM,0)),Zd=array(0, dim=c(NumGammaW,NumGammaM,0)),
+                  NumGammaW=NumGammaW, NumGammaM=NumGammaM,
+                  pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
+                  sampling=sampling_design, constraints=constraints,
+                  opts=control)
+      )
+      if(any(startsWith("Error",c(" ",out.text)))){
+        message(sprintf("Intercept only optimization is overly constrained. Estimates may be unstable."))
+      }
+
+      out$loglik_null <- -out.list.null$objective
+      names(out.list.null$solution) <- names(init_theta[-c(2:NumBeta)])
+      names(out.list.null$solution)[1] <- "intercept"
+    
+     if(verbose){
+      message("Maximized intercept only log-likelihood:")
+      message(sprintf("Intercept only log-likelihood = %s",
+               format(-out.list.null$objective,nsmall=5,digits=6)))
+      message_print(out.list.null$solution)
+     }
+     pmf_null <- exp(logpmfestfun(beta=c(out.list.null$solution[1],rep(0,dim(S)[3]+dim(X)[3]+dim(Z)[3]-1)),
+                  GammaW=out.list.null$solution[1+(1:NumGammaW)], 
+                  GammaM=out.list.null$solution[1+(NumGammaW)+(1:NumGammaM)],
+                  S=S, X=X, Z=Z,
+                  pmfW=pmfW, pmfM=pmfM, gw=gw, gm=gm))
+     pmf_null[nrow(pmf_null),ncol(pmf_null)] <- 0
+     if(is.matrix(pmf_null)) dimnames(pmf_null) <- dimnames(pmf)
+
+     out$pmf_null <- pmf_null
+     out$null_coefficients = rep(0,NumBeta)
+    }else{
+      out$pmf_null <- pmf
+      out$loglik_null <- out$loglik
+      out$coefficients_null = out$coefficients     
+    }
+
+    out.text <- capture.output(
+       out.list.null0 <- nloptr::nloptr(x0=out$solution[-c(1:NumBeta)], eval_f=loglikfun_intercept, 
+                 eval_grad_f=gloglikfun_intercept,
+                 eval_g_eq=eqfun_intercept,  eval_jac_g_eq=jeqfun_intercept,
+                 lb=LB[-c(1:NumBeta)],ub=UB[-c(1:NumBeta)],
+                 Sd=array(0, dim=c(NumGammaW,NumGammaM,0)),Xd=array(0, dim=c(NumGammaW,NumGammaM,0)),Zd=array(0, dim=c(NumGammaW,NumGammaM,0)),
+                 NumGammaW=NumGammaW, NumGammaM=NumGammaM,
+                 pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
+                 sampling=sampling_design, constraints=constraints,
+                 opts=control)
+    )
+    if(any(startsWith("Error",c(" ",out.text)))){
+       message(sprintf("Null optimization is overly constrained. Estimates may be unstable."))
+    }
+
+    out$loglik_null0 <- -out.list.null0$objective
+    names(out.list.null0$solution) <- names(init_theta[-c(1:NumBeta)])
+   
+    if(verbose){
+     message("Maximized null log-likelihood:")
+     message(sprintf("Null log-likelihood = %s",
+              format(-out.list.null0$objective,nsmall=5,digits=6)))
+     message_print(out.list.null0$solution)
+    }
+
+    pmf_null0 <- exp(logpmfestfun(beta=rep(0,dim(S)[3]+dim(X)[3]+dim(Z)[3]),
+                 GammaW=out.list.null0$solution[(1:NumGammaW)], 
+                 GammaM=out.list.null0$solution[(NumGammaW)+(1:NumGammaM)],
+                 S=S, X=X, Z=Z,
+                 pmfW=pmfW, pmfM=pmfM, gw=gw, gm=gm))
+    pmf_null0[nrow(pmf_null0),ncol(pmf_null0)] <- 0
+    if(is.matrix(pmf_null0)) dimnames(pmf_null0) <- dimnames(pmf)
+    out$pmf_null0 <- pmf_null0
+    out$null0_coefficients = rep(0,NumBeta)
+
     out$solution[NumBeta+(1:NumGammaW)] <- out$LOGODDS_SW
     out$solution[NumBeta+NumGammaW+(1:NumGammaM)] <- out$LOGODDS_SM
-
-    pmfN_households <- pmfN
-    pmfN_households[-nrow(pmfN), -ncol(pmfN)] <- 0.5*pmfN[-nrow(pmfN), -ncol(pmfN)]
-    pmf_households <- pmfN_households / sum(pmfN_households)
-    out$loglik <- stats::dmultinom(x=pmfN_households,prob=pmf_est,log=TRUE)
-
-    if(formula != stats::as.formula(~1)){
-      PMF_SW <- pmf_households[-nrow(pmfN), ncol(pmfN)]
-      PMF_SM <- pmf_households[ nrow(pmfN),-ncol(pmfN)]
-      a <- outer(PMF_SW,PMF_SM,"*")
-      a <- a / sum(a)
-      pmf_null <- pmf_households
-      pmf_null[-nrow(pmfN),-ncol(pmfN)] <- a*sum(pmf_null[-nrow(pmfN),-ncol(pmfN)])
-      out$loglik.null <- stats::dmultinom(x=pmfN_households,prob=pmf_null,log=TRUE)
-    }else{
-      out$loglik.null <- out$loglik
-      out$null_coefficients = out$coefficients     
-    }
 
     out$counts=counts
     out$Sd=S; out$Xd=X; out$Zd=Z
     out$control <- control
-    out$nobs <- num_sampled
+    out$nobs <- nobs
 
     out$formula <- formula
     out$sampled <- sampled
@@ -570,15 +665,20 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out$sampling_design <- sampling_design
     
     if (!control$bootstrap) {
-     out$analyticalCI <- cbind(out$solution[1:NumBeta]-1.96*sqrt(diag(out$covar)[1:NumBeta]),
-                               out$solution[1:NumBeta]+1.96*sqrt(diag(out$covar)[1:NumBeta]))
+     a <- diag(out$covar)[1:NumBeta]
+     if(any(a>0)){
+       a[a>0] <- sqrt(a[a>0])
+     }
+     a[a<0] <- NA
+     out$analyticalCI <- cbind(out$solution[1:NumBeta]-1.96*a,
+                               out$solution[1:NumBeta]+1.96*a)
      colnames(out$analyticalCI) = c('LB','UB')
     }
 
     if(control$bootstrap){
      # so use the bootstrap
      # First save the hessian-based one
-     out.hessian <- rpm.hessian_nog(th_hat,Sd=S,Xd=X,Zd=Z,
+     out.hessian <- rpm.hessian(th_hat,Sd=S,Xd=X,Zd=Z,
                   NumBeta=NumBeta, NumGamma=NumGamma,
                   NumGammaW=NumGammaW, NumGammaM=NumGammaM,
                   pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
@@ -734,7 +834,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
 #   recompute pmf_est
     # VIP using the uncorrected value to estimate pmf_est
     out$coefficients <- out$solution
-    pmf_est <- exp(augpmfnew(out$coefficients[1:NumBeta],
+    pmf_est <- exp(logpmfestfun(out$coefficients[1:NumBeta],
                 GammaW=out$coefficients[NumBeta+(1:NumGammaW)], 
                 GammaM=out$coefficients[(NumBeta+NumGammaW)+(1:NumGammaM)],
                 S, X, Z,
@@ -757,8 +857,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
       out$LOGODDS_SM <- log(out$PMF_SM/(1-out$PMF_SM))
     }
 #
-    pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-    pmf_est <- pmf_est/sum(pmf_est)
+    pmf_est_coef <- pmf_est
     out$coefficients <- th_hat-coef.boot.bias
 
     coef.boot.bias.LOGODDS <- apply(out.boot.LOGODDS, 2, stats::median, na.rm=TRUE) - th_hat[NumBeta+(1:NumGamma)]
@@ -806,6 +905,7 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out.boot.LOGODDS <- sweep(out.boot.LOGODDS,2,2*coef.boot.bias.LOGODDS,"-")
     out$boot.coef.LOGODDS <- out.boot.LOGODDS
     }else{ # non-bootstrap version
+      pmf_est_coef <- pmf_est
       out$coefficients <- out$solution
     } # end of the bootstrap
 
@@ -827,12 +927,16 @@ rpm_MLPLE <- function(formula, Xdata, Zdata,
     out$NumGammaM <- NumGammaM
     out$num_women <- num_women
     out$num_men <- num_men
-    out$nobs <- num_sampled
+    out$nobs <- nobs
     
     out$pmf <- pmf
     out$pmfW=pmfW; out$pmfM=pmfM
     out$pmfN=pmfN
-    out$pmf_est <- pmf_est
+    out$pmf_est <- pmf_est_sol
+    out$pmf_est_sol <- pmf_est_sol
+    if (control$bootstrap) {
+      out$pmf_est_coef <- pmf_est_coef
+    }
     
     # For GOF
     out$bs.results <- bs.results

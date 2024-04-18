@@ -56,6 +56,8 @@ utils::globalVariables(c(".control.rpm"))
 #' @param bs.xtol_rel scalar; Stop the bootstrap optimization when an optimization step (or an estimate of the optimum)
 #' changes every parameter by less than bs.xtol_rel multiplied by the
 #' absolute value of the parameter. See the parameter xtol_rel for details.
+#' @param bs.save.data logical; Should the bootstrapped data be saved in the bootstrap return list (as components
+#' \code{Xdata} and \code{Zdata}).
 #' @param seed Seed value (integer) for the random number generator.  See
 #' \code{\link[base]{set.seed}}
 #' @param parallel.type The type of cluster to run. The typical choices are "MPI" and "PSOCK", where you
@@ -97,7 +99,7 @@ utils::globalVariables(c(".control.rpm"))
 control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level=0,
                         xtol_rel=1.0e-8, ftol_rel=1e-8, ftol_abs=1.0e-6,
                         lower.bound=-10, upper.bound=10,
-                        maxeval=2000, bs.maxeval=2000, bs.xtol_rel=1.0e-8,
+                        maxeval=2000, bs.maxeval=2000, bs.xtol_rel=1.0e-8, bs.save.data=FALSE,
                         check_derivatives=FALSE, bootstrap=TRUE, hessian=FALSE, seed = NULL,
                         parallel.type="PSOCK",
                         parallel.ncores=1,
@@ -145,6 +147,9 @@ control.rpm <- function(init_theta=NULL, algorithm="NLOPT_LD_SLSQP", print_level
     }
     if (!missing(bs.xtol_rel)) {
       control[["bs.xtol_rel"]] <- bs.xtol_rel
+    }
+    if (!missing(bs.save.data)) {
+      control[["bs.save.data"]] <- bs.save.data
     }
     if (!missing(seed)) {
       control[["seed"]] <- seed

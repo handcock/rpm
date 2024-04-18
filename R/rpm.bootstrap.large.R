@@ -211,9 +211,9 @@ rpm.bootstrap.large <- function(I, solution,
       control$maxeval=control$bs.maxeval
       
       out.text <- capture.output(
-       out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun_nog, 
-                 eval_grad_f=gloglikfun_nog,
-                 eval_g_eq=eqfun_nog,  eval_jac_g_eq=jeqfun_nog,
+       out.fit <- nloptr::nloptr(x0=solution, eval_f=loglikfun, 
+                 eval_grad_f=gloglikfun,
+                 eval_g_eq=eqfun,  eval_jac_g_eq=jeqfun,
                  lb=LB,ub=UB,
                  Sd=S,Xd=X,Zd=Z,NumGammaW=NumGammaW, NumGammaM=NumGammaM,
                  pmfW=pmfW, pmfM=pmfM, pmf=pmf, counts=pmfN, gw=gw, gm=gm, N=N,
@@ -230,14 +230,12 @@ rpm.bootstrap.large <- function(I, solution,
       out.fit$eval_f  <- NULL
 
       th_hat <-  out.fit$solution
-      pmf_est <- exp(augpmfnew(th_hat[1:NumBeta],
+      pmf_est <- exp(logpmfest(th_hat[1:NumBeta],
                 GammaW=th_hat[NumBeta+(1:NumGammaW)], 
                 GammaM=th_hat[(NumBeta+NumGammaW)+(1:NumGammaM)],
                 S, X, Z,
                 pmfW, pmfM, gw=gw, gm=gm))
       pmf_est[nrow(pmf_est),ncol(pmf_est)] <- 0
-      pmf_est[-nrow(pmf_est), -ncol(pmf_est)] <- 2*pmf_est[-nrow(pmf_est), -ncol(pmf_est)]
-      pmf_est <- pmf_est/sum(pmf_est)
 
       PMF_SW <- pmf_est[-nrow(pmf_est), ncol(pmf_est),drop=FALSE]
       PMF_SW <- PMF_SW / (PMF_SW + 0.5*apply(pmf_est[ -nrow(pmf_est),-ncol(pmf_est),drop=FALSE],1,sum))
@@ -263,11 +261,7 @@ rpm.bootstrap.large <- function(I, solution,
       names(LOGODDS_SW) <- paste0("LOD_Single.W.",cnW)
       names(LOGODDS_SM) <- paste0("LOD_Single.M.",cnM)
 
-      pmfN_households <- pmfN
-      pmfN_households[-nrow(pmfN), -ncol(pmfN)] <- 0.5*pmfN[-nrow(pmfN), -ncol(pmfN)]
-      pmf_households <- pmfN_households / sum(pmfN_households)
-      loglik <- stats::dmultinom(x=pmfN_households,prob=pmf_est,log=TRUE)
-
+      if(!control$bs.save.data){Xdata <- Zdata <- NULL}
       list(est=th_hat, LOGODDS_SW=LOGODDS_SW,LOGODDS_SM=LOGODDS_SM,
            Xdata=Xdata,
            Zdata=Zdata,

@@ -17,6 +17,7 @@ rpm(
   pair_w = NULL,
   sampled = NULL,
   sampling_design = "stock-flow",
+  fixed.margins = NULL,
   control = control.rpm(),
   verbose = FALSE
 )
@@ -61,6 +62,11 @@ person. All single people are directly sampled.}
 singles and couples);
 \code{"stock-stock"} (households are sampled, each household can be a single or a couple);
 \code{"census"} (the sample is a census of the population of people).}
+
+\item{fixed.margins}{list If not NULL the numbers of men and women (i.e, in \code{pmfW} and \code{pmfM}) are assumed determined by
+outside information and are hence fixed. In this case \code{fixed.margins} should be a list with two elements. The first is
+a vector of women's margins for each type and the second is the men's margins for each type.
+The default, NULL, means these are estimated from sample data.}
 
 \item{control}{A list of control parameters for algorithm tuning. Constructed using
 \code{\link{control.rpm}}, which should be consulted for specifics.}

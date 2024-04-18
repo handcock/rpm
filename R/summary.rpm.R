@@ -69,7 +69,6 @@ summary.rpm <- function (object, ...,
   control <- object$control
   
   nobs<- object$nobs
-  df <- length(object$coefficients)
 
   devtext <- "Deviance:"
   mle.lik<-try(stats::logLik(object,...), silent=TRUE)
@@ -78,7 +77,10 @@ summary.rpm <- function (object, ...,
   if(include.single){
    if(length(object$coefficients) < length(object$solution)) object$coefficients <- c(object$coefficients,object$LOGODDS_SW,object$LOGODDS_SM)
    object$covar <- object$ext.covar
+  }else{
+    if(length(object$coefficients) > object$NumBeta) object$coefficients <- object$coefficients[1:object$NumBeta]
   }
+  df <- object$nobs - object$NumGammaW*object$NumGammaM + object$NumBeta
   if(is.null(object$hessian) && is.null(object$covar)){
     object$covar <- diag(NA, nrow=length(object$coefficients))
   }
@@ -93,7 +95,7 @@ summary.rpm <- function (object, ...,
   }else{
     asycov <- object$covar
   }
-  asycov <- asycov[seq_along(object$coefficients),seq_along(object$coefficients)]
+  asycov <- asycov[seq_along(object$coefficients),seq_along(object$coefficients),drop=FALSE]
   colnames(asycov) <- rownames(asycov) <- names(object$coefficients)
   
   asyse <- diag(asycov)
@@ -113,7 +115,7 @@ summary.rpm <- function (object, ...,
   rdf <- nobs - df
   tval <- object$coefficients / asyse
   pval <- rep(NA,length=length(tval))
-  pval[!is.na(tval) & !is.nan(tval)] <- 2 * stats::pt(q=abs(tval[!is.na(tval) & !is.nan(tval)]), df=rdf, lower.tail=FALSE)
+  pval[!is.na(tval) & !is.nan(tval) & rdf > 0] <- 2 * stats::pt(q=abs(tval[!is.na(tval) & !is.nan(tval) & rdf > 0]), df=rdf, lower.tail=FALSE)
   
   count <- 1
   templist <- NULL

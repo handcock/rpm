@@ -16,6 +16,7 @@ rpm_MLPLE(
   pair_w = NULL,
   sampled = NULL,
   sampling_design = "stock-flow",
+  fixed.margins = fixed.margins,
   control = control.rpm(),
   verbose = FALSE
 )
@@ -60,6 +61,11 @@ person. All single people are directly sampled.}
 singles and couples);
 \code{"stock-stock"} (households are sampled, each household can be a single or a couple);
 \code{"census"} (the sample is a census of the population of people).}
+
+\item{fixed.margins}{list If not NULL the numbers of men and women (i.e, in \code{pmfW} and \code{pmfM}) are assumed determined by
+outside information and are hence fixed. In this case \code{fixed.margins} should be a list with two elements. The first is
+a vector of women's margins for each type and the second is the men's margins for each type.
+The default, NULL, means these are estimated from sample data.}
 
 \item{control}{A list of control parameters for algorithm tuning. Constructed using
 \code{\link{control.rpm}}, which should be consulted for specifics.}
@@ -131,7 +137,7 @@ Goyal, Shuchi; Handcock, Mark S.; Jackson, Heide M.; Rendall, Michael S. and Yeu
 \emph{A Practical Revealed Preference Model for Separating Preferences and Availability Effects in Marriage Formation},
 \emph{Journal of the Royal Statistical Society}, A. \doi{10.1093/jrsssa/qnad031} 
 
-Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review},, Vol. 41, 27-57.
+Dagsvik, John K. (2000) \emph{Aggregation in Matching Markets} \emph{International Economic Review}, Vol. 41, 27-57.
 JSTOR: https://www.jstor.org/stable/2648822, \doi{10.1111/1468-2354.00054}
 
 Menzel, Konrad (2015).

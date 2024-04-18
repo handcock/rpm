@@ -52,11 +52,13 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
     Xnames = NULL
     Znames = NULL
     
+    if(!is.null(model.terms)){
     for(i in 1:ncov)
     {
         switch(as.character(model.terms[[i]][[1]]),
                '1' = {
                    if(attr(model.terms,"sign")[[i]]>0){
+                     # so the term is "+1" rather than "-1"
                      S = abind::abind(S,
                            array(1, dim=c(nW,nM,1)),
                            along = 3)
@@ -301,7 +303,7 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
                        attrname = as.character(model.terms[[i]][[j]])
                    
                        X = abind::abind(X,
-                                 1*outer(Xall[,attrname], Zall[,attrname],">"),  # a liking for group 2 of lower level
+                                 1*outer(Xall[,attrname], Zall[,attrname],"<"),  # a liking for group 2 of lower level
                                  along = 3)
                        Xnames = c(Xnames, paste("W_smallerthan", attrname, sep="."))
                    }
@@ -312,7 +314,7 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
                        attrname = as.character(model.terms[[i]][[j]])
                        
                        X = abind::abind(X,
-                                 1*outer(Xall[,attrname], Zall[,attrname],"<"),  # a liking for group 2 of higher level
+                                 1*outer(Xall[,attrname], Zall[,attrname],">"),  # a liking for group 2 of higher level
                                  along = 3)
                        Xnames = c(Xnames, paste("W_greaterthan", attrname, sep="."))
                    }
@@ -323,7 +325,7 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
                        attrname = as.character(model.terms[[i]][[j]])
                        
                        Z = abind::abind(Z,
-                                 1*outer(Zall[,attrname], Xall[,attrname],">"),  # a liking for group 1 of lower level
+                                 1*outer(Zall[,attrname], Xall[,attrname],"<"),  # a liking for group 1 of lower level
                                  along = 3)
                        Znames = c(Znames, paste("M_smallerthan", attrname, sep="."))
                    }
@@ -334,7 +336,7 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
                        attrname = as.character(model.terms[[i]][[j]])
                        
                        Z = abind::abind(Z,
-                                 1*outer(Zall[,attrname], Xall[,attrname],"<"),  # a liking for group 1 of higher level
+                                 1*outer(Zall[,attrname], Xall[,attrname],">"),  # a liking for group 1 of higher level
                                  along = 3)
                        Znames = c(Znames, paste("M_greaterthan", attrname, sep="."))
                    }
@@ -406,6 +408,7 @@ rpm.model.matrix = function(model.terms, Xall, Zall, intercept=TRUE)
                }
                
                )
+    }
     }
     if(intercept){
       S = abind::abind(array(1, dim=c(nW,nM,1)), S, along = 3)
