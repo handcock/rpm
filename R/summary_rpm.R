@@ -48,7 +48,7 @@
 #' If that variable is NA then the women is
 #' assumed to be single. If men are listed in \code{Zdata} and are not partnered then they are assumed single.
 #' Weights are specified by three optional variables in \code{Xdata}.
-#' \itemize{
+#' \describe{
 #' \item{X_w}{: This is character string of the name of the weight variable for women. The sum of the weights should be the
 #' number of women in the population.}
 #' \item{Z_w}{: This is character string of the name of the weight variable for men. The sum of the weights should be the

@@ -12,7 +12,7 @@ or her partnerships. The women's ID variable s called \code{pid} and
 the variable with the ID of the women's partner is called \code{pair_id}. If the women is single the men's ID is NA.
 \code{Zdata} is for men. Each row is a man, each column is a variable on that men
 The men's ID variable is called \code{pid}.
-\itemize{
+\describe{
 \item{pair_id}{ The ID of the person's partner. This is in both \code{Xdata} and \code{Zdata}.}
 \item{sampled}{ The indicator that the person was sampled directly (as distinct from being included as the match of a directly sampled
 person. All single people are directly sampled.  This is in both \code{Xdata} and \code{Zdata}.}
@@ -44,7 +44,7 @@ The pairings are determined by the \code{pair_id} variable in \code{Xdata}.
 If that variable is NA then the women is
 assumed to be single. If men are listed in \code{Zdata} and are not partnered then they are assumed single.
 Weights are specified by three optional variables in \code{Xdata}.
-\itemize{
+\describe{
 \item{X_w}{The weight variable for women. The sum of the weights of the sampled women is the
 number of women in the population.}
 \item{Z_w}{The weight variable for men. The sum of the weights of the sampled men is the

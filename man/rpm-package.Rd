@@ -71,6 +71,7 @@ Econometrica, Vol. 83, No. 3 (May, 2015), 897-941. \doi{10.3982/ECTA12299}
 Useful links:
 \itemize{
   \item \url{https://github.com/handcock/rpm}
+  \item Report bugs at \url{https://github.com/handcock/rpm/issues}
 }
 
 }
