@@ -1,8 +1,8 @@
 Package: rpm
 Type: Package
 Title: Modeling of Revealed Preferences Matchings
-Version: 0.7-3
-Date: 2024-04-17
+Version: 0.7-4
+Date: 2025-10-22
 Authors@R: c(
         person("Mark S.", "Handcock", role=c("aut","cre"), email="handcock@stat.ucla.edu", comment=c(ORCID="0000-0002-9985-2785")),
         person("Ryan M. ", "Admiraal", role=c("ctb"), email="ryan.admiraal@vuw.ac.nz"),
@@ -36,4 +36,4 @@ Imports:
     doFuture,
     foreach
 Encoding: UTF-8
-RoxygenNote: 7.3.1
+RoxygenNote: 7.3.3

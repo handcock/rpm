@@ -98,10 +98,26 @@ rowMax <- function(stat) {
     .Call('_rpm_rowMax', PACKAGE = 'rpm', stat)
 }
 
+#' Row-wise argmax (0-based column indices)
+#'
+#' Returns the column index of the maximum element in each row of an integer matrix.
+#' Uses Armadillo's `index_max()` to avoid deprecated `.max(uword&)`.
+#'
+#' @param A Integer matrix.
+#' @return A row vector of 0-based column indices of the maxima.
+#' @export
 rowwise_imax_idx <- function(A) {
     .Call('_rpm_rowwise_imax_idx', PACKAGE = 'rpm', A)
 }
 
+#' Row-wise argmax (0-based column indices)
+#'
+#' Returns the column index of the maximum element in each row of A.
+#' Uses Armadillo's `index_max()` to avoid deprecated `.max(uword&)`.
+#'
+#' @param A Numeric matrix.
+#' @return A row vector of 0-based column indices of the maxima.
+#' @export
 rowwise_max_idx <- function(A) {
     .Call('_rpm_rowwise_max_idx', PACKAGE = 'rpm', A)
 }

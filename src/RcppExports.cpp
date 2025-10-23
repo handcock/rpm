@@ -394,23 +394,23 @@ BEGIN_RCPP
 END_RCPP
 }
 // rowwise_imax_idx
-arma::urowvec rowwise_imax_idx(const arma::imat A);
+arma::urowvec rowwise_imax_idx(const arma::imat& A);
 RcppExport SEXP _rpm_rowwise_imax_idx(SEXP ASEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::imat >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const arma::imat& >::type A(ASEXP);
     rcpp_result_gen = Rcpp::wrap(rowwise_imax_idx(A));
     return rcpp_result_gen;
 END_RCPP
 }
 // rowwise_max_idx
-arma::urowvec rowwise_max_idx(const arma::mat A);
+arma::urowvec rowwise_max_idx(const arma::mat& A);
 RcppExport SEXP _rpm_rowwise_max_idx(SEXP ASEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat >::type A(ASEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type A(ASEXP);
     rcpp_result_gen = Rcpp::wrap(rowwise_max_idx(A));
     return rcpp_result_gen;
 END_RCPP
